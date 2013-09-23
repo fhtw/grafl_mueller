@@ -1,15 +1,70 @@
 1)
-Select * from ANGESTELLTE 
+select * from ANGESTELLTE 
 	where GEHALT * 12 >= 50000 and GEHALT * 12 <= 80000
+
 2)
-Select * from ANGESTELLTE
+select * 
+	from ANGESTELLTE
 	where MONTH(EINTRITTSDATUM) <= 5 and MONTH(EINTRITTSDATUM) >= 3
+
 3)
-Select VORNAME, NACHNAME, GEHALT, Abteilung.NAME from ANGESTELLTE JOIN (Select NAME, ABT_NR from ABTEILUNGEN
-			where ABTEILUNGEN.ORT = 'Köln') as Abteilung on ANGESTELLTE.ABT_NR = Abteilung.ABT_NR
+select VORNAME, NACHNAME, GEHALT, Abteilung.NAME 
+	from ANGESTELLTE JOIN 
+	(
+		select NAME, ABT_NR 
+			from ABTEILUNGEN
+			where ABTEILUNGEN.ORT = 'Köln'
+	) as Abteilung 
+	on ANGESTELLTE.ABT_NR = Abteilung.ABT_NR
 	where BERUF = 'Informatiker'
+
 4)
-Select ABTEILUNGEN.NAME, count(*) as 'SUM Angestellte' from ANGESTELLTE Right JOIN ABTEILUNGEN on ANGESTELLTE.ABT_NR = ABTEILUNGEN.ABT_NR
+select ABTEILUNGEN.NAME, count(*) as 'SUM Angestellte'
+	from ANGESTELLTE Right JOIN ABTEILUNGEN 
+	on ANGESTELLTE.ABT_NR = ABTEILUNGEN.ABT_NR
 	group by ABTEILUNGEN.NAME
 		  
 5)
+select BERUF 
+	from ANGESTELLTE 
+	group by BERUF 
+	having count(*) > 3 and avg(gehalt) > 4600
+
+6)
+select Kunden.KUN_NR, count(AUFTRAEGE.AUFTRAGSNR) as '#' 
+	from KUNDEN left join AUFTRAEGE 
+	on KUNDEN.KUN_NR = AUFTRAEGE.KUN_NR 
+	group by KUNDEN.KUN_NR
+
+7)
+select VORNAME, NACHNAME 
+	from ANGESTELLTE left outer join ABTEILUNGEN 
+	on ANGESTELLTE.ANG_NR = ABTEILUNGEN.LEITER 
+	WHERE ABTEILUNGEN.ABT_NR is null
+
+8)
+select ABTEILUNGEN.NAME, avg(ANGESTELLTE.GEHALT) as 'Durchschnittsgehalt' 
+	from ABTEILUNGEN join ANGESTELLTE 
+	on ABTEILUNGEN.ABT_NR = ANGESTELLTE.ABT_NR 
+	group by ABTEILUNGEN.NAME
+
+9)
+select ABTEILUNGEN.NAME, count(*) as 'Anzahl Angestellter' 
+	from ABTEILUNGEN join ANGESTELLTE 
+	on ABTEILUNGEN.ABT_NR = ANGESTELLTE.ABT_NR 
+	group by ABTEILUNGEN.NAME 
+	having count(*) > 5 
+	order by 'Anzahl Angestellter'
+10)
+select TEILE.BEZEICHNUNG, sum(LAGERBESTAND.BESTAND) as 'Bestand' 
+	from TEILE left join LAGERBESTAND 
+	on TEILE.TNR = LAGERBESTAND.TNR 
+	group by TEILE.BEZEICHNUNG
+
+11)
+select ARTIKEL.BEZEICHNUNG, sum(AUFTRAGSPOSITIONEN.MENGE) as 'Menge' 
+	from ARTIKEL join AUFTRAGSPOSITIONEN 
+	on ARTIKEL.TNR = AUFTRAGSPOSITIONEN.TNR 
+	group by ARTIKEL.BEZEICHNUNG
+
+12)
