@@ -19,7 +19,7 @@ public class Server {
             System.out.println("Waiting for connections...");
             while(true){
                 Socket sock = listener.accept();
-                Thread t = new Thread(new HttpRequest(sock));
+                Thread t = new Thread(new HttpRequestHandler(sock));
                 t.start();
             }
         }

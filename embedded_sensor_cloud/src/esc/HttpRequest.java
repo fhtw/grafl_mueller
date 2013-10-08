@@ -2,38 +2,40 @@ package esc;
 
 import java.io.*;
 import java.net.Socket;
+import java.net.URI;
+import java.net.URLDecoder;
+
 
 /**
  * @author Alex
  */
-public class HttpRequest implements Runnable{
-    Socket socket;
-    HttpRequest(Socket socket) {
+public class HttpRequest {
+    private String protocol;
+    private String path;
+    private String httpVersion;
+    private Socket socket;
+
+    HttpRequest(String[] s, Socket socket) throws UnsupportedEncodingException {
+        this.protocol = s[0];
+        this.path = URLDecoder.decode(s[1], "UTF-8");
+        this.httpVersion = s[2];
         this.socket = socket;
     }
 
-    public void run(){
-        System.out.println("Connected: " + socket.getInetAddress().getHostAddress());
-        processRequest();
-    }
-
-    private void processRequest() {
-        String requestHeaderLine;
+    public void respondIndex()
+    {
+        String line;
         try(BufferedWriter out = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()))) {
-            try(BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()))){
-                String line;
-                requestHeaderLine = in.readLine();
-                //TODO: Request headerline aufsplitten und auswerten, dann plugins ansprechen
-
-                System.out.println(requestHeaderLine);
-               /* while((line = in.readLine()).length() != 0) {
-                    System.out.println(line);
-                }*/
-                out.write("HTTP/1.1 200 OK\r\n");
-                out.write("Content-Type: text/html\r\n\r\n");
-                out.flush();
+            out.write("HTTP/1.1 200 OK\r\n");
+            out.write("Content-Type: text/html\r\n\r\n");
+            BufferedReader fileReader = new BufferedReader(new FileReader("res/index.html"));
+            while((line = fileReader.readLine()).length() != 0){
+                out.write(line.toCharArray());
             }
-        } catch (IOException e) {
+            System.out.println("Sent 200 OK to " + socket.getRemoteSocketAddress().toString());
+            out.flush();
+        }
+        catch(IOException | NullPointerException e) {
             e.printStackTrace();
         }
     }
