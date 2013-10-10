@@ -1,4 +1,4 @@
-package esc;
+package esc.plugin;
 
 import java.net.Socket;
 

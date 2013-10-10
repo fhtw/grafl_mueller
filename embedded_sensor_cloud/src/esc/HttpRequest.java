@@ -1,6 +1,6 @@
 package esc;
 
-import com.sun.org.apache.bcel.internal.util.ClassLoader;
+import esc.plugin.IPlugin;
 
 
 import java.io.*;

@@ -6,9 +6,9 @@ import java.net.Socket;
 /**
  * @author Alex
  */
-public class HttpRequestHandler implements Runnable{
+public class ConnectionHandler implements Runnable{
     private Socket _socket;
-    HttpRequestHandler(Socket socket) {
+    ConnectionHandler(Socket socket) {
         this._socket = socket;
     }
 
