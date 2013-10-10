@@ -7,26 +7,24 @@ import java.net.Socket;
  * @author Alex
  */
 public class HttpRequestHandler implements Runnable{
-    Socket socket;
+    private Socket _socket;
     HttpRequestHandler(Socket socket) {
-        this.socket = socket;
+        this._socket = socket;
     }
 
     public void run(){
-        System.out.println("Connected: " + socket.getRemoteSocketAddress().toString());
+        System.out.println("Connected: " + _socket.getRemoteSocketAddress().toString());
         processRequest();
     }
 
     private void processRequest() {
         String requestHeaderLine;
-        try(BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()))){
-            String line;
+        try(BufferedReader in = new BufferedReader(new InputStreamReader(_socket.getInputStream()))){
+            //holt sich erste zeile
             requestHeaderLine = in.readLine();
             System.out.println(requestHeaderLine);
+            //ruft funktion auf die die erste zeile verarbeitet
             processRequestHeader(requestHeaderLine);
-            /*while((line = in.readLine()).length() != 0) {
-                System.out.println(line);
-            } */
 
         } catch (IOException | NullPointerException e) {
                 e.printStackTrace();
@@ -35,15 +33,19 @@ public class HttpRequestHandler implements Runnable{
 
     private void processRequestHeader(String headLine) {
         try {
-            String[] splitHeadLine = headLine.split(" ");
-            if(splitHeadLine.length > 2) {
-                if(splitHeadLine[2].startsWith("HTTP")) {
-                    HttpRequest request = new HttpRequest(splitHeadLine, this.socket);
-                    request.respondIndex();
-                    return;
+            if(headLine != null){
+                //not null -> aufteilen
+                String[] splitHeadLine = headLine.split(" ");
+                if(splitHeadLine.length > 2) {
+                    //hat 3 teile
+                    if(splitHeadLine[2].startsWith("HTTP")) {
+                        //ist HTTP request -> request in neuen HttpRequest kapseln
+                        HttpRequest request = new HttpRequest(splitHeadLine, this._socket);
+                        return;
+                    }
                 }
             }
-            throw new Exception("Invalid HTTP request headline!");
+            throw new Exception("Invalid HTTP request headline: " + headLine);
         }
         catch (Exception e) {
             e.printStackTrace();
