@@ -66,12 +66,12 @@ int main(int argc, char** argv)
 		}
 		printf("Directory already exists and will be used.\n");
 	}
-	
+	/*
 	dirp = opendir(userName); 
 	while ((entry = readdir(dirp)) != NULL)
 	{
 	    if (entry->d_type == DT_REG)
-	    { /* If the entry is a regular file */
+	    { /* If the entry is a regular file 
 	         file_count++;
 	    }
 	}
@@ -92,7 +92,7 @@ int main(int argc, char** argv)
 			printf ("Error: couldn't read latest ID!\nPlease check %s/log.txt file\n",userName);
 			return EXIT_FAILURE;
 		}
-	}
+	}*/
 				
     create_socket = socket (AF_INET, SOCK_STREAM, 0);
 
@@ -143,20 +143,21 @@ int main(int argc, char** argv)
 				printf("Client closed remote socket\n");
 				break;
 			}	
-	            
+			
 			buffer[size] = '\0';
 			printf ("Message received: %s\n", buffer);
 			
+			/*** SEND ***/
 			if(strncmp (buffer, "send", 4)  == 0)
 			{
 				//sendMail();
 			}
-			
+			/*** LIST ***/
 			if(strncmp (buffer, "list", 4)  == 0)
 			{
 				//listMail();
 			}
-			
+			/*** READ ***/
 			if(strncmp (buffer, "read", 4)  == 0)
 			{
 				/*readMail();
@@ -170,29 +171,31 @@ int main(int argc, char** argv)
 					// answer ERR
 				}*/
 			}
-			
+			/*** DELETE ***/
 			if(strncmp (buffer, "del", 3)  == 0)
 			{
+				//fflush(buffer);
+				printf("send username");
 				strcpy(buffer,"Username (max. 8 characters): ");
-				send(new_socket, buffer, strlen(buffer),0); 
-				
-				size = recv(create_socket,buffer,BUF-1, 0);	
-				if(size == -1) perror("RECV:");	
+				send(new_socket, buffer, strlen(buffer),0);
+				printf("befor USERAME");
+				size = recv(new_socket,buffer,BUF-1, 0);	
+				if(size == -1) perror("RECV:");
 				if (size > 0 && size <= 8)
 				{
+					printf("after USERAME");
 					buffer[size]= '\0';
 					strcpy(clientUserName,buffer);
 					
 					strcpy(buffer,"Message-ID: ");
 					send(new_socket, buffer, strlen(buffer),0); 
-					size = recv(create_socket,buffer,BUF-1, 0);
+					size = recv(new_socket,buffer,BUF-1, 0);
 					
 					if (size > 0) 
 					{
 						buffer[size]= '\0';
 						recID = atoi(buffer);
 					}
-					/*** ToDo: get parameter from Client ***/
 					if ((retCode = delMail(recID,clientUserName)) == 0)
 					{
 						// answer OK
@@ -220,6 +223,7 @@ int main(int argc, char** argv)
     return EXIT_SUCCESS;
 }
 
+/*
 int getIdFromLog(char* path)
 {
 	int id;
@@ -246,7 +250,7 @@ int getIdFromLog(char* path)
 		}
 	}
 	return id;
-}
+}*/
 
 int delMail(int id, char* path)
 {

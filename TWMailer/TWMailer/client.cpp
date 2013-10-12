@@ -72,25 +72,20 @@ int main (int argc, char **argv)
  		{
  			/* Instruction */
 	        size=recv(create_socket,buffer,BUF-1, 0);
-	       	if (size>0)
+            printf("%s",buffer);
+            /* username */
+         	fgets (buffer, BUF, stdin);
+         	size=recv(create_socket,buffer,BUF-1, 0);
+     	 	printf("%s",buffer);
+     	 	
+	       	if (strncmp(buffer,"ERR",3) != 0)
 	        {
-	            buffer[size]= '\0';
-	            printf("%s",buffer);
-	            /* username */
+	            /* message id */
              	fgets (buffer, BUF, stdin);
-             	size=recv(create_socket,buffer,BUF-1, 0);
-             	
-		       	if (size>0 && strncmp(buffer,"ERR",3) != 0)
-		        {
-		            buffer[size]= '\0';
-		            printf("%s",buffer);
-		            /* message id */
-	             	fgets (buffer, BUF, stdin);
-	           		/* response -- OK or ERR */
-	           		size=recv(create_socket,buffer,BUF-1, 0);
-			        printf("%s",buffer);
-		        }		           	
-	 		}
+           		/* response -- OK or ERR */
+           		size=recv(create_socket,buffer,BUF-1, 0);
+		        printf("%s",buffer);
+	        }
 	 	}
        	     	
     }
