@@ -1,0 +1,4 @@
+root-dir beim start von server angeben
+	1 DIR per user (username)
+	|--> Liste mit allen files (ständig aktualisieren: read, list, send, delte)
+	|--> Hashwerte als filenamen --> in Liste speichern
