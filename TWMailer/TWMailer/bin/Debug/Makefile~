@@ -1,0 +1,14 @@
+all:
+	g++ -std=c++0x -Wall -o labrob labrob.cpp -pthread 
+clean:
+	rm -f labrob
+
+dist:
+	mkdir labrob_mueller
+	cp ./labrob.cpp ./labrob_mueller/labrob.cpp
+	cp ./Makefile ./Vehicle-Test-Grid_mueller/Makefile
+	tar -czf labrob_mueller.tar.gz labrob_mueller
+	rm -rf labrob_mueller
+
+distclean:
+	rm -rf labrob.tar.gz

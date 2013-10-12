@@ -1,0 +1,20 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 11.00
+# Visual Studio 2010
+Project("{2857B73E-F847-4B02-9238-064979017E93}") = "TWMailer", "TWMailer\TWMailer.cproj", "{F1B5D0F7-0A4C-471B-8BEB-42C6169A13F2}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{F1B5D0F7-0A4C-471B-8BEB-42C6169A13F2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F1B5D0F7-0A4C-471B-8BEB-42C6169A13F2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F1B5D0F7-0A4C-471B-8BEB-42C6169A13F2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F1B5D0F7-0A4C-471B-8BEB-42C6169A13F2}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(MonoDevelopProperties) = preSolution
+		StartupItem = TWMailer\TWMailer.cproj
+	EndGlobalSection
+EndGlobal
