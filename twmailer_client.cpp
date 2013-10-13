@@ -13,13 +13,14 @@
 #include <stdio.h>
 #include <string>
 #include <string.h>
+#include <iostream>
 #define BUF 1024
 
 using namespace std;
 
 int main (int argc, char **argv) 
 {
-	int create_socket, portNb, check, size;
+	int create_socket, portNb, check, size, i;
     char buffer[BUF];
     struct sockaddr_in address;
 	string lastCommand;
@@ -68,9 +69,6 @@ int main (int argc, char **argv)
             printf("%s",buffer);
         }
         fgets (buffer, BUF, stdin);
-        
-        if(strncmp(buffer, "quit", 4) == 0) lastCommand = "quit";
-        
         send(create_socket, buffer, strlen(buffer)-1, 0);
        	
        	if(strncmp(buffer, "quit", 4) == 0) lastCommand = "quit";
@@ -78,42 +76,31 @@ int main (int argc, char **argv)
        	/*** SEND ***/
    		if(strncmp(buffer, "send", 4) == 0)
         {
-       		/* Sender */
-	        size=recv(create_socket,buffer,BUF-1, 0);
-            if(size > 0) buffer[size]= '\0';
-            printf("%s",buffer);
-            fgets (buffer, BUF, stdin);
-         	send(create_socket, buffer, strlen (buffer)-1, 0);
-         	
-         	/* Receiver */
-         	size=recv(create_socket,buffer,BUF-1, 0);
-         	printf("Test1\n");
-         	
-         	if(size > 0) buffer[size]= '\0';
-     	 	printf("%s",buffer);
-     	 	if(strncmp(buffer,"ERR",3) != 0)
-     	 	{
-	     	 	/* Subject */
-	         	size=recv(create_socket,buffer,BUF-1, 0);
-	         	if(size > 0) buffer[size]= '\0';
-	     	 	printf("%s",buffer);
-	     	 	if(strncmp(buffer,"ERR",3) != 0)
-     	 		{
-		     	 	/* Content */
-		         	size=recv(create_socket,buffer,BUF-1, 0);
-		         	if(size > 0) buffer[size]= '\0';
-		     	 	printf("%s",buffer);
-		     	 	if(strncmp(buffer,"ERR",3) != 0)
-     	 			{
-			     	 	do
-			     	 	{
-			     	 		fgets (buffer, BUF, stdin);
-			         		send(create_socket, buffer, BUF-1, 0);
-			     	 	}
-			     	 	while(strncmp(buffer,"FIN",3) != 0);
-	     			}
-     	 		}
-     	 	}
+        	check = 0;
+        	/* Sender, Receiver, Subject */
+        	for(i = 0; i <= 3; i++)
+        	{
+        		size=recv(create_socket,buffer,BUF-1, 0);
+           		if(size > 0) buffer[size]= '\0';
+            	printf("%s",buffer);
+            	if(strncmp(buffer,"ERR",3) == 0) 
+            	{
+            		check = -1;
+            		break;
+            	}
+        		fgets (buffer, BUF, stdin);
+         		send(create_socket, buffer, strlen (buffer)-1, 0);
+        	}
+        	/* Content */
+        	if (check == 0)
+        	{
+        		do
+	     	 	{ 		
+	     	 		fgets (buffer, BUF, stdin);
+	         		send(create_socket, buffer, strlen (buffer), 0);
+	         	}
+	     	 	while(strncmp(buffer,".",1) != 0);
+        	}
        	}
        		
        	/*** LIST ***/
@@ -141,7 +128,54 @@ int main (int argc, char **argv)
         	}
         	check++;
         } 
-        	
+        
+       	/*** READ ***/
+       	if(strncmp(buffer, "read",4) == 0)
+       	{
+       		check = 1;
+       		do
+       		{
+	       		size=recv(create_socket,buffer,BUF-1, 0);
+	       		if(size > 0) buffer[size]= '\0';
+	        	printf("%s",buffer);
+	        	if(strncmp(buffer,"ERR",3) == 0) break;
+	    		
+	    		if(check++ <= 2)
+	    		{
+		    		fgets (buffer, BUF, stdin);
+		     		send(create_socket, buffer, strlen (buffer)-1, 0);
+       			}
+       		}
+       		while(strcmp(buffer,"OK\n") != 0);
+       		
+       		
+       		/* Sender, Message-Number 
+       		check = 1;
+        	for(i = 0; i <= 1; i++)
+        	{
+        		size=recv(create_socket,buffer,BUF-1, 0);
+           		if(size > 0) buffer[size]= '\0';
+            	printf("%s",buffer);
+            	if(strncmp(buffer,"ERR",3) == 0) 
+            	{
+            		check = -1;
+            		break;
+            	}
+        		fgets (buffer, BUF, stdin);
+         		send(create_socket, buffer, strlen (buffer)-1, 0);
+        	}
+        	/* Content 
+        	if (check == 1)
+        	{
+        		do
+	     	 	{
+	     	 		size=recv(create_socket,buffer,BUF-1, 0);
+	           		if(size > 0) buffer[size]= '\0';
+	            	printf("%s",buffer);
+	     	 	}
+	     	 	while(strcmp(buffer,"FIN") != 0);
+        	}*/
+       	}
        	/*** DEL ***/
         if(strncmp (buffer, "del", 3)  == 0)
  		{

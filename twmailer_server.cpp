@@ -21,17 +21,13 @@
 #include <cstdio>
 #include <vector>
 #include <list>
-//#include <message.h>
+#include <functional>
 
 #define BUF 1024
 
 
 using namespace std;
-int getIdFromLog(char* path);
-void sendMail();
-void listMail();
-int readMail();
-int delMail(int id, string path);
+int delMail(int id, string path, list<string> messageList);
 list<string> getFileList(string mailDirectory, string userName);
 
 
@@ -40,14 +36,14 @@ int main(int argc, char** argv)
 	int create_socket, new_socket;
     socklen_t addrlen;
     char buffer[BUF];
-    string mailDir,userPath, clientUserName, receiver, sender, subject;
+    string mailDir,userPath,userFileName, clientUserName, collision, receiver, sender, subject;
    	int size, portNb, retCode, recID;
 	DIR * dirp;
 	list<string> mailList;
 	struct dirent * entry;
     struct sockaddr_in address, cliaddress;
+    hash<string> str_hash;
    
-	int id;
 	if (argc < 2)
 	{
 		printf("Wrong Number of Arguments!\nUsage: ./%s Port Directory\n",argv[0]);
@@ -92,7 +88,7 @@ int main(int argc, char** argv)
         if (new_socket > 0)
         {
             printf ("Client connected from %s:%d...\n", inet_ntoa (cliaddress.sin_addr),ntohs(cliaddress.sin_port));
-            strcpy(buffer,"Welcome to TWMailer, please enter your command: ");
+            strcpy(buffer,"Welcome to TWMailer!\n");
             send(new_socket, buffer, strlen(buffer),0);         
         }
 
@@ -119,12 +115,11 @@ int main(int argc, char** argv)
 			/*** SEND ***/
 			if(strncmp (buffer, "send", 4)  == 0)
 			{
-				printf("buffer:%s;",buffer);
 				/* sender */
 				strcpy(buffer, "Sender(max. 8 character): ");
 				send(new_socket, buffer, strlen(buffer),0);
 				size = recv(new_socket,buffer,BUF-1, 0);
-				if(size > 0 && size <= 8)
+				if(size > 0 && size <= 8 && strcmp(buffer,"") != 0)
 				{
 					buffer[size] = '\0';
 					sender = string(buffer);
@@ -132,7 +127,7 @@ int main(int argc, char** argv)
 					send(new_socket, buffer, strlen(buffer),0);			
 					/* receiver */
 					size = recv(new_socket,buffer,BUF-1, 0);
-					if(size > 0 && size <= 8)
+					if(size > 0 && size <= 8 && strcmp(buffer,"") != 0)
 					{
 						buffer[size] = '\0';
 						receiver = string(buffer);
@@ -141,33 +136,56 @@ int main(int argc, char** argv)
 						
 						/* subject */
 						size = recv(new_socket,buffer,BUF-1, 0);
-						if(size > 0 && size <= 80)
+						if(size > 0 && size <= 80 && strcmp(buffer,"") != 0)
 						{
 							buffer[size] = '\0';
 							mailList = getFileList(mailDir, receiver);
-							
+							subject = string(buffer);
 							/* content */
-							userPath = mailDir + "/" + receiver + "1.txt";
-							ofstream newMessage (userPath);
 							
+							/* string to hash to string ==> Filename*/
+							userPath = mailDir + "/" + receiver + "/";
+							userFileName = receiver + sender + subject;
+							stringstream ss;
+							ss << str_hash(userFileName);
+							userFileName = ss.str();
+							collision = userFileName;						
+							/* check if file exists */
+							int count = 0,check = 0;
+							while(check != 1)
+							{
+								ifstream checkFile(userPath+collision);
+						    	if(checkFile.fail()) check = 1;
+						    	else 
+						    	{
+						    		collision = userFileName;
+						    		collision  += to_string(++count);
+						    		checkFile.close();	
+						    		
+						    	}
+						    }
+							
+							ofstream newMessage;
+							newMessage.open(userPath + collision);
 							newMessage << sender << endl;
 							newMessage << receiver << endl;
 							newMessage << subject << endl;
 							
-							strcpy(buffer, "Content (quit with \".\": ");
+							strcpy(buffer, "Content (quit with \".\"): ");
 							send(new_socket, buffer, strlen(buffer),0);
+							
 							do
 							{
 								size = recv(new_socket,buffer,BUF-1, 0);
 								if(size > 0)
 								{
 									buffer[size] = '\0';
-									newMessage << buffer;
+									newMessage << buffer;		
 								}
 							}
-							while(strcmp(buffer,".") != 0);
+							while(strncmp(buffer,".",1) != 0);
 							newMessage.close();
-							strcpy(buffer, "FIN");
+							strcpy(buffer, "OK\n");
 						}
 						else 
 						{
@@ -192,7 +210,7 @@ int main(int argc, char** argv)
 				send(new_socket, buffer, strlen(buffer),0);
 				size = recv(new_socket,buffer,BUF-1, 0);	
 				if(size == -1) perror("RECV:");
-				if (size > 0 && size <= 8 && strncmp(buffer,"\n",1) != 0)
+				if (size > 0 && size <= 8 && strcmp(buffer,"") != 0)
 				{
 					buffer[size]= '\0';
 					clientUserName = string(buffer);
@@ -232,16 +250,65 @@ int main(int argc, char** argv)
 			/*** READ ***/
 			if(strncmp (buffer, "read", 4)  == 0)
 			{
-				/*readMail();
-				if ((retCode = readMail(id,userName)) == 0)
+				strcpy(buffer,"Username (max. 8 characters): ");
+				send(new_socket, buffer, strlen(buffer),0);
+				size = recv(new_socket,buffer,BUF-1, 0);	
+				if(size == -1) perror("RECV:");
+				if (size > 0 && size <= 8 && strcmp(buffer,"") != 0)
 				{
-					// answer OK
-					// + content
+					buffer[size]= '\0';
+					clientUserName = string(buffer);
+					
+					strcpy(buffer,"Messege number: ");
+					send(new_socket, buffer, strlen(buffer),0);
+					size = recv(new_socket,buffer,BUF-1, 0);
+					if (size > 0)
+					{
+						buffer[size]= '\0';
+						recID = atoi(buffer);
+					
+						mailList = getFileList(mailDir, clientUserName);
+						
+						if(mailList.size() > 0)
+						{
+							list<string>::iterator i;
+							chdir((mailDir + "/" + clientUserName).c_str());
+							int mailNumber = 0;
+							
+							for(i=mailList.begin(); i != mailList.end(); ++i)
+							{
+								string line;
+								mailNumber++;
+								
+								if(mailNumber == recID)
+								{
+		  							ifstream mail(*i);
+									if (mail.is_open())
+									{
+										while(!getline (mail,line))
+										{
+											strcpy(buffer,line.c_str());
+											send(new_socket, buffer, strlen(buffer),0);
+										}	
+										mail.close();
+										strcpy(buffer,"OK\n");
+									}
+									else
+									{
+										strcpy(buffer,"ERR\n");
+									}
+									send(new_socket, buffer, strlen(buffer),0);
+									break;
+								}
+							} 
+						}
+					}
 				}
-				else
+				else 
 				{
-					// answer ERR
-				}*/
+					strcpy(buffer,"ERR - Please try again with a correct Username!\n");
+				}
+				send(new_socket, buffer, strlen(buffer),0); 
 			}
 			/*** DELETE ***/
 			if(strncmp (buffer, "del", 3)  == 0)
@@ -250,7 +317,7 @@ int main(int argc, char** argv)
 				send(new_socket, buffer, strlen(buffer),0);
 				size = recv(new_socket,buffer,BUF-1, 0);	
 				if(size == -1) perror("RECV:");
-				if (size > 0 && size <= 8 && strncmp (buffer, "\n",1) != 0)
+				if (size > 0 && size <= 8 && strcmp (buffer, "") != 0)
 				{
 					buffer[size]= '\0';
 					clientUserName = string(buffer);					
@@ -263,7 +330,9 @@ int main(int argc, char** argv)
 						buffer[size]= '\0';
 						recID = atoi(buffer);
 					}
-					if ((retCode = delMail(recID,clientUserName)) == 0)
+					
+					mailList = getFileList(mailDir, clientUserName);
+					if ((retCode = delMail(recID,mailDir+clientUserName,mailList)) == 0)
 					{
 						// answer OK
 						strcpy(buffer,"OK\n");					
@@ -289,35 +358,6 @@ int main(int argc, char** argv)
     close (create_socket);
     return EXIT_SUCCESS;
 }
-
-/*
-int getIdFromLog(char* path)
-{
-	int id;
-	std::string filename;
-	std::string inputString, token;
-	std::string delimiter = ":";
-	
-	filename.assign(path);
-	filename.append("/log.txt");
-	//ToDo: cast char* to String --> use as Path --> ?
-	//std::ifstream input (strcat(path,"/log.txt");
-	std::ifstream input (filename);
-	
-	if (input.is_open())
-	{
-		input >> inputString;
-		input.close();
-		
-		token = inputString.substr(3, inputString.find(delimiter));
-		std::stringstream str( token );
-		if((str >> id).fail())
-		{
-			return -1;
-		}
-	}
-	return id;
-}*/
 
 list<string> getFileList(string mailDirectory, string userName)
 {
@@ -350,28 +390,40 @@ list<string> getFileList(string mailDirectory, string userName)
 		closedir(dirP);
 	}
 	return fileList;
-
 }
 
-int delMail(int id, string path)
+int delMail(int id, string path, list<string> messageList)
 {
 	string filename;
-	filename.assign(path);
-	filename.append("/" +  to_string(id));
 	
-	std::vector<char> v(filename.begin(), filename.end());
-	v.push_back('\0'); 
-	char* cFilename = &v[0];
+	if(messageList.size() > 0)
+	{
+		list<string>::iterator i;
+		chdir((path).c_str());
+		int mailNumber = 0;
+		
+		for(i=messageList.begin(); i != messageList.end(); ++i)
+		{
+			cout << "File: " << (*i) << endl;
+			mailNumber++;
+			
+			if(mailNumber == id)
+			{
+				
+				int ret_code = remove((*i).c_str());
+			    if (ret_code == 0)
+			    {
+			        std::cout << "File was successfully deleted\n";
+			        return 0;
+			    } 
+			    else 
+			    {
+			        std::cerr << "Error during the deletion: " << ret_code << '\n';
+			        return -1;
+			    }
+			}
+		} 
+	}
 	
-	int ret_code = std::remove(cFilename);
-    if (ret_code == 0)
-    {
-        std::cout << "File was successfully deleted\n";
-        return 0;
-    } 
-    else 
-    {
-        std::cerr << "Error during the deletion: " << ret_code << '\n';
-        return 1;
-    }
+	
 }
