@@ -111,7 +111,7 @@ int main (int argc, char **argv)
         } 
         if(lastCommand == "list")
         {
-        	if(check == 2)
+        	if(check == 1)
         	{
 	        	do
 	        	{
@@ -122,7 +122,7 @@ int main (int argc, char **argv)
 			           	return EXIT_FAILURE;
 			        }
 			        buffer[size] = '\0';
-			        printf("%s",buffer);        	
+		         	if(strncmp(buffer, "FIN", 3) != 0) printf("%s",buffer);     	
 	        	}
 	        	while(strncmp(buffer, "FIN", 3) != 0);
         	}
@@ -140,41 +140,13 @@ int main (int argc, char **argv)
 	        	printf("%s",buffer);
 	        	if(strncmp(buffer,"ERR",3) == 0) break;
 	    		
-	    		if(check++ <= 2)
+	    		if((check++) <= 2)
 	    		{
 		    		fgets (buffer, BUF, stdin);
 		     		send(create_socket, buffer, strlen (buffer)-1, 0);
        			}
        		}
        		while(strcmp(buffer,"OK\n") != 0);
-       		
-       		
-       		/* Sender, Message-Number 
-       		check = 1;
-        	for(i = 0; i <= 1; i++)
-        	{
-        		size=recv(create_socket,buffer,BUF-1, 0);
-           		if(size > 0) buffer[size]= '\0';
-            	printf("%s",buffer);
-            	if(strncmp(buffer,"ERR",3) == 0) 
-            	{
-            		check = -1;
-            		break;
-            	}
-        		fgets (buffer, BUF, stdin);
-         		send(create_socket, buffer, strlen (buffer)-1, 0);
-        	}
-        	/* Content 
-        	if (check == 1)
-        	{
-        		do
-	     	 	{
-	     	 		size=recv(create_socket,buffer,BUF-1, 0);
-	           		if(size > 0) buffer[size]= '\0';
-	            	printf("%s",buffer);
-	     	 	}
-	     	 	while(strcmp(buffer,"FIN") != 0);
-        	}*/
        	}
        	/*** DEL ***/
         if(strncmp (buffer, "del", 3)  == 0)

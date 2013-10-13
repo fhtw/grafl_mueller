@@ -22,6 +22,7 @@
 #include <vector>
 #include <list>
 #include <functional>
+#include <iterator>
 
 #define BUF 1024
 
@@ -180,7 +181,7 @@ int main(int argc, char** argv)
 								if(size > 0)
 								{
 									buffer[size] = '\0';
-									newMessage << buffer;		
+									if(strncmp(buffer,".",1) != 0) newMessage << buffer;		
 								}
 							}
 							while(strncmp(buffer,".",1) != 0);
@@ -237,9 +238,10 @@ int main(int argc, char** argv)
 								mail.close();
 							}
 						} 
-						strcpy(buffer,"FIN");
-						send(new_socket, buffer, strlen(buffer),0);
+						chdir("../..");
 					}
+					strcpy(buffer,"FIN");
+					send(new_socket, buffer, strlen(buffer),0);					
 				}
 				else 
 				{
@@ -258,7 +260,6 @@ int main(int argc, char** argv)
 				{
 					buffer[size]= '\0';
 					clientUserName = string(buffer);
-					
 					strcpy(buffer,"Messege number: ");
 					send(new_socket, buffer, strlen(buffer),0);
 					size = recv(new_socket,buffer,BUF-1, 0);
@@ -268,39 +269,33 @@ int main(int argc, char** argv)
 						recID = atoi(buffer);
 					
 						mailList = getFileList(mailDir, clientUserName);
-						
-						if(mailList.size() > 0)
+						if(mailList.size() > recID)
 						{
-							list<string>::iterator i;
-							chdir((mailDir + "/" + clientUserName).c_str());
-							int mailNumber = 0;
-							
-							for(i=mailList.begin(); i != mailList.end(); ++i)
+							list<string>::iterator i = next(mailList.begin(), recID-1);
+  							string line;
+  							
+  							chdir((mailDir + "/" + clientUserName).c_str());
+  							ifstream mail(*i);
+							if (mail.is_open())
 							{
-								string line;
-								mailNumber++;
-								
-								if(mailNumber == recID)
+								while(getline (mail,line))
 								{
-		  							ifstream mail(*i);
-									if (mail.is_open())
-									{
-										while(!getline (mail,line))
-										{
-											strcpy(buffer,line.c_str());
-											send(new_socket, buffer, strlen(buffer),0);
-										}	
-										mail.close();
-										strcpy(buffer,"OK\n");
-									}
-									else
-									{
-										strcpy(buffer,"ERR\n");
-									}
+									strcpy(buffer,(line + "\n").c_str());
 									send(new_socket, buffer, strlen(buffer),0);
-									break;
-								}
-							} 
+								}	
+								mail.close();
+								strcpy(buffer,"OK\n");
+							}
+							else
+							{
+								strcpy(buffer,"ERR\n");
+							}
+							
+							chdir("../..");
+						}
+						else
+						{
+							strcpy(buffer,"ERR - Message number does not exist!\n");
 						}
 					}
 				}
@@ -332,7 +327,7 @@ int main(int argc, char** argv)
 					}
 					
 					mailList = getFileList(mailDir, clientUserName);
-					if ((retCode = delMail(recID,mailDir+clientUserName,mailList)) == 0)
+					if ((retCode = delMail(recID,mailDir + "/" + clientUserName,mailList)) == 0)
 					{
 						// answer OK
 						strcpy(buffer,"OK\n");					
@@ -396,34 +391,22 @@ int delMail(int id, string path, list<string> messageList)
 {
 	string filename;
 	
-	if(messageList.size() > 0)
+	if(messageList.size() > id)
 	{
-		list<string>::iterator i;
+		list<string>::iterator i = next(messageList.begin(), id-1);
 		chdir((path).c_str());
-		int mailNumber = 0;
 		
-		for(i=messageList.begin(); i != messageList.end(); ++i)
-		{
-			cout << "File: " << (*i) << endl;
-			mailNumber++;
-			
-			if(mailNumber == id)
-			{
-				
-				int ret_code = remove((*i).c_str());
-			    if (ret_code == 0)
-			    {
-			        std::cout << "File was successfully deleted\n";
-			        return 0;
-			    } 
-			    else 
-			    {
-			        std::cerr << "Error during the deletion: " << ret_code << '\n';
-			        return -1;
-			    }
-			}
-		} 
-	}
-	
-	
+		int ret_code = remove((*i).c_str());
+		chdir("../..");
+	    if (ret_code == 0)
+	    {
+	        std::cout << "File was successfully deleted\n";
+	        return 0;
+	    } 
+	    else 
+	    {
+	        std::cerr << "Error during the deletion: " << ret_code << '\n';
+	        return -1;
+	    } 
+	}	
 }
