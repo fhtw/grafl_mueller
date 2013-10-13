@@ -60,24 +60,68 @@ int main (int argc, char **argv)
     }
 
     do
-    {      
+    {    
+    	size=recv(create_socket,buffer,BUF-1, 0);
+        if (size>0)
+        {
+            buffer[size]= '\0';
+            printf("%s",buffer);
+        }
         fgets (buffer, BUF, stdin);
-        if(strncmp(buffer, "list", 4) == 0)
+        
+        if(strncmp(buffer, "quit", 4) == 0) lastCommand = "quit";
+        
+        send(create_socket, buffer, strlen(buffer)-1, 0);
+       	
+       	if(strncmp(buffer, "quit", 4) == 0) lastCommand = "quit";
+       	
+       	/*** SEND ***/
+   		if(strncmp(buffer, "send", 4) == 0)
+        {
+       		/* Sender */
+	        size=recv(create_socket,buffer,BUF-1, 0);
+            if(size > 0) buffer[size]= '\0';
+            printf("%s",buffer);
+            fgets (buffer, BUF, stdin);
+         	send(create_socket, buffer, strlen (buffer)-1, 0);
+         	
+         	/* Receiver */
+         	size=recv(create_socket,buffer,BUF-1, 0);
+         	printf("Test1\n");
+         	
+         	if(size > 0) buffer[size]= '\0';
+     	 	printf("%s",buffer);
+     	 	if(strncmp(buffer,"ERR",3) != 0)
+     	 	{
+	     	 	/* Subject */
+	         	size=recv(create_socket,buffer,BUF-1, 0);
+	         	if(size > 0) buffer[size]= '\0';
+	     	 	printf("%s",buffer);
+	     	 	if(strncmp(buffer,"ERR",3) != 0)
+     	 		{
+		     	 	/* Content */
+		         	size=recv(create_socket,buffer,BUF-1, 0);
+		         	if(size > 0) buffer[size]= '\0';
+		     	 	printf("%s",buffer);
+		     	 	if(strncmp(buffer,"ERR",3) != 0)
+     	 			{
+			     	 	do
+			     	 	{
+			     	 		fgets (buffer, BUF, stdin);
+			         		send(create_socket, buffer, BUF-1, 0);
+			     	 	}
+			     	 	while(strncmp(buffer,"FIN",3) != 0);
+	     			}
+     	 		}
+     	 	}
+       	}
+       		
+       	/*** LIST ***/
+       	if(strncmp(buffer, "list", 4) == 0)
         {
         	lastCommand = "list"; 
         	check = 0;
         } 
-        if(strncmp(buffer, "quit", 4) == 0) lastCommand = "quit";
-        send(create_socket, buffer, strlen(buffer)-1, 0);
-        
-	    size=recv(create_socket,buffer,BUF-1, 0);
-        if(size < 0)
-        {
-        	perror("recv error");
-           	return EXIT_FAILURE;
-        }
-        buffer[size] = '\0';
-        printf("%s",buffer);
         if(lastCommand == "list")
         {
         	if(check == 2)
@@ -93,10 +137,36 @@ int main (int argc, char **argv)
 			        buffer[size] = '\0';
 			        printf("%s",buffer);        	
 	        	}
-	        	while(strncmp(buffer, "#", 1) == 0);
+	        	while(strncmp(buffer, "FIN", 3) != 0);
         	}
         	check++;
-        }     	 	                	
+        } 
+        	
+       	/*** DEL ***/
+        if(strncmp (buffer, "del", 3)  == 0)
+ 		{
+ 			/* username */
+	        size=recv(create_socket,buffer,BUF-1, 0);
+            if(size > 0) buffer[size]= '\0';
+            printf("%s",buffer);
+         	fgets (buffer, BUF, stdin);
+         	send(create_socket, buffer, strlen (buffer)-1, 0);
+         	
+         	size=recv(create_socket,buffer,BUF-1, 0);
+         	if(size > 0) buffer[size]= '\0';
+     	 	printf("%s",buffer);
+     	 	
+	       	if (strncmp(buffer,"ERR",3) != 0)
+	        {
+	            /* message id */
+             	fgets (buffer, BUF, stdin);
+             	send(create_socket, buffer, strlen (buffer), 0);
+           		/* response -- OK or ERR */
+           		size=recv(create_socket,buffer,BUF-1, 0);
+           		if(size > 0) buffer[size]= '\0';
+		        printf("%s",buffer);
+	        } 
+		}   	 	                	
     }
     while (lastCommand != "quit");
     close (create_socket);

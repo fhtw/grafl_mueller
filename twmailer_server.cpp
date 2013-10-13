@@ -40,13 +40,13 @@ int main(int argc, char** argv)
 	int create_socket, new_socket;
     socklen_t addrlen;
     char buffer[BUF];
-    string mailDir, clientUserName;
-   	int size, portNb, retCode, recID,file_count = 0;
+    string mailDir,userPath, clientUserName, receiver, sender, subject;
+   	int size, portNb, retCode, recID;
 	DIR * dirp;
 	list<string> mailList;
 	struct dirent * entry;
     struct sockaddr_in address, cliaddress;
-
+   
 	int id;
 	if (argc < 2)
 	{
@@ -67,34 +67,7 @@ int main(int argc, char** argv)
 		}
 		printf("Directory already exists and will be used.\n");
 	}
-	/*
-	dirp = opendir(userName); 
-	while ((entry = readdir(dirp)) != NULL)
-	{
-	    if (entry->d_type == DT_REG)
-	    { /* If the entry is a regular file 
-	         file_count++;
-	    }
-	}
-	closedir(dirp);
-	
-	if (file_count == 0)
-	{
-		std::ofstream outfile (logFilename);
-		outfile << "id:0";
-		outfile.close();
-	}
-	else
-	{
-		
-		id = getIdFromLog(userName);
-		if (id == -1) 
-		{
-			printf ("Error: couldn't read latest ID!\nPlease check %s/log.txt file\n",userName);
-			return EXIT_FAILURE;
-		}
-	}*/
-				
+					
     create_socket = socket (AF_INET, SOCK_STREAM, 0);
 
     memset(&address,0,sizeof(address));
@@ -119,19 +92,14 @@ int main(int argc, char** argv)
         if (new_socket > 0)
         {
             printf ("Client connected from %s:%d...\n", inet_ntoa (cliaddress.sin_addr),ntohs(cliaddress.sin_port));
-            strcpy(buffer,"Welcome to TWMailer, Please enter your command:\n");
+            strcpy(buffer,"Welcome to TWMailer, please enter your command: ");
             send(new_socket, buffer, strlen(buffer),0);         
         }
 
         do
         {
-        	/* 
-        		ToDo:
-        		- DELETE
-        		- SEND
-        		- LIST
-        		- READ
-        	*/
+        	strcpy(buffer,"Please enter your command: ");
+        	send(new_socket, buffer, strlen(buffer),0);
         	
             size = recv (new_socket, buffer, BUF-1, 0);
             if( size < 0)
@@ -151,7 +119,71 @@ int main(int argc, char** argv)
 			/*** SEND ***/
 			if(strncmp (buffer, "send", 4)  == 0)
 			{
-				//sendMail();
+				printf("buffer:%s;",buffer);
+				/* sender */
+				strcpy(buffer, "Sender(max. 8 character): ");
+				send(new_socket, buffer, strlen(buffer),0);
+				size = recv(new_socket,buffer,BUF-1, 0);
+				if(size > 0 && size <= 8)
+				{
+					buffer[size] = '\0';
+					sender = string(buffer);
+					strcpy(buffer, "Receiver (max. 8 character): ");
+					send(new_socket, buffer, strlen(buffer),0);			
+					/* receiver */
+					size = recv(new_socket,buffer,BUF-1, 0);
+					if(size > 0 && size <= 8)
+					{
+						buffer[size] = '\0';
+						receiver = string(buffer);
+						strcpy(buffer, "Subject (max. 80 character): ");
+						send(new_socket, buffer, strlen(buffer),0);
+						
+						/* subject */
+						size = recv(new_socket,buffer,BUF-1, 0);
+						if(size > 0 && size <= 80)
+						{
+							buffer[size] = '\0';
+							mailList = getFileList(mailDir, receiver);
+							
+							/* content */
+							userPath = mailDir + "/" + receiver + "1.txt";
+							ofstream newMessage (userPath);
+							
+							newMessage << sender << endl;
+							newMessage << receiver << endl;
+							newMessage << subject << endl;
+							
+							strcpy(buffer, "Content (quit with \".\": ");
+							send(new_socket, buffer, strlen(buffer),0);
+							do
+							{
+								size = recv(new_socket,buffer,BUF-1, 0);
+								if(size > 0)
+								{
+									buffer[size] = '\0';
+									newMessage << buffer;
+								}
+							}
+							while(strcmp(buffer,".") != 0);
+							newMessage.close();
+							strcpy(buffer, "FIN");
+						}
+						else 
+						{
+							strcpy(buffer,"ERR - Please try again with a correct Subject (max. 80 character)!\n");
+						}
+					}
+					else 
+					{
+						strcpy(buffer,"ERR - Please try again with a correct Receiver (max. 8 character)!\n");
+					}
+				}
+				else 
+				{
+					strcpy(buffer,"ERR - Please try again with a correct Sender (max. 8 character)!\n");
+				}
+				send(new_socket, buffer, strlen(buffer),0);
 			}
 			/*** LIST ***/
 			if(strncmp (buffer, "list", 4)  == 0)
@@ -160,12 +192,12 @@ int main(int argc, char** argv)
 				send(new_socket, buffer, strlen(buffer),0);
 				size = recv(new_socket,buffer,BUF-1, 0);	
 				if(size == -1) perror("RECV:");
-				if (size > 0 && size <= 8)
+				if (size > 0 && size <= 8 && strncmp(buffer,"\n",1) != 0)
 				{
 					buffer[size]= '\0';
 					clientUserName = string(buffer);
 					mailList = getFileList(mailDir, clientUserName);
-					strcpy(buffer, ("Number of messages: " + to_string(mailList.size())).c_str());
+					strcpy(buffer, ("Number of messages: " + to_string(mailList.size()) + "\n").c_str());
 					send(new_socket, buffer, strlen(buffer),0);
 					if(mailList.size() > 0)
 					{
@@ -187,6 +219,8 @@ int main(int argc, char** argv)
 								mail.close();
 							}
 						} 
+						strcpy(buffer,"FIN");
+						send(new_socket, buffer, strlen(buffer),0);
 					}
 				}
 				else 
@@ -212,19 +246,14 @@ int main(int argc, char** argv)
 			/*** DELETE ***/
 			if(strncmp (buffer, "del", 3)  == 0)
 			{
-				//fflush(buffer);
-				printf("send username");
 				strcpy(buffer,"Username (max. 8 characters): ");
 				send(new_socket, buffer, strlen(buffer),0);
-				printf("befor USERAME");
 				size = recv(new_socket,buffer,BUF-1, 0);	
 				if(size == -1) perror("RECV:");
-				if (size > 0 && size <= 8)
+				if (size > 0 && size <= 8 && strncmp (buffer, "\n",1) != 0)
 				{
-					printf("after USERAME");
 					buffer[size]= '\0';
-					clientUserName = string(buffer);
-					
+					clientUserName = string(buffer);					
 					strcpy(buffer,"Message-ID: ");
 					send(new_socket, buffer, strlen(buffer),0); 
 					size = recv(new_socket,buffer,BUF-1, 0);
@@ -237,12 +266,12 @@ int main(int argc, char** argv)
 					if ((retCode = delMail(recID,clientUserName)) == 0)
 					{
 						// answer OK
-						strcpy(buffer,"OK");					
+						strcpy(buffer,"OK\n");					
 					}
 					else
 					{
 						// answer ERR
-						strcpy(buffer,"ERR");
+						strcpy(buffer,"ERR - File not found or can't be deleted\n");
 					}
 				}
 				else 
