@@ -55,29 +55,13 @@ public class HttpRequest {
         catch (IOException | NullPointerException | ClassNotFoundException | InstantiationException |
                 IllegalAccessException e) {
             e.printStackTrace();
+            new HttpResponse(_socket, 500, _path);
         }
         finally{
             if(!requestProcessed){
                 //page not found, yo
-                respondPageNotFound();
+                new HttpResponse(_socket, 404, _path);
             }
-        }
-    }
-
-    private void respondPageNotFound(){
-        //PAGE NOT FOUND RESPONSE HERST
-        try(BufferedWriter out = new BufferedWriter(new OutputStreamWriter(_socket.getOutputStream()))) {
-            out.write("HTTP/1.1 404 Not Found\r\n");
-            out.write("Content-Type: text/html\r\n\r\n");
-            out.write("<head><title>404 Page Not Found</title></head>\n");
-            out.write("<body><h1>404 Page Not Found</h1>\r\n");
-            out.write("The requested URL " + _path + " was not found on this server.\n");
-            out.write("<hr>\nEmbedded Sensor Cloud - Grafl & M&#252;ller</body>\r\n");
-            System.out.println("Sent 404 Not Found to " + _socket.getRemoteSocketAddress().toString());
-            out.flush();
-        }
-        catch(IOException | NullPointerException e) {
-            e.printStackTrace();
         }
     }
 }

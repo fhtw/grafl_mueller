@@ -1,5 +1,7 @@
 package esc.plugin;
 
+import esc.HttpResponse;
+
 import java.io.*;
 import java.net.Socket;
 
@@ -28,6 +30,7 @@ public class StaticPagePlugin implements IPlugin{
         }
         catch(IOException | NullPointerException e) {
             e.printStackTrace();
+            new HttpResponse(socket, 500, "bla");
         }
 
     }

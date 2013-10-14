@@ -28,6 +28,7 @@ public class ConnectionHandler implements Runnable{
 
         } catch (IOException | NullPointerException e) {
                 e.printStackTrace();
+                new HttpResponse(_socket, 500, "bla");
         }
     }
 
@@ -49,6 +50,7 @@ public class ConnectionHandler implements Runnable{
         }
         catch (Exception e) {
             e.printStackTrace();
+            new HttpResponse(_socket, 500,"bla");
         }
     }
 }
