@@ -5,7 +5,6 @@ import esc.plugin.IPlugin;
 
 import java.io.*;
 import java.net.Socket;
-import java.net.URLDecoder;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -15,14 +14,14 @@ import java.util.List;
  */
 public class HttpRequest {
     private String _protocol;
-    private String _path;
+    private UrlClass _url;
     private String _httpVersion;
     private Socket _socket;
 
     HttpRequest(String[] s, Socket socket) throws UnsupportedEncodingException {
         //Request headline aufteilen und decodieren
         this._protocol = s[0];
-        this._path = URLDecoder.decode(s[1], "UTF-8");
+        this._url = new UrlClass(s[1]);
         this._httpVersion = s[2];
         this._socket = socket;
         this.checkPluginAcceptance();
@@ -45,7 +44,7 @@ public class HttpRequest {
                 pluginList.add((IPlugin) o);
             }
             for(IPlugin iPlugin : pluginList){
-                if(iPlugin.acceptRequest(_path)){
+                if(iPlugin.acceptRequest(_url.pluginPath)){
                     iPlugin.runPlugin(_socket);
                     requestProcessed = true;
                     break;
@@ -55,12 +54,12 @@ public class HttpRequest {
         catch (IOException | NullPointerException | ClassNotFoundException | InstantiationException |
                 IllegalAccessException e) {
             e.printStackTrace();
-            new HttpResponse(_socket, 500, _path);
+            new HttpResponse(_socket, 500, _url.fullPath);
         }
         finally{
             if(!requestProcessed){
                 //page not found, yo
-                new HttpResponse(_socket, 404, _path);
+                new HttpResponse(_socket, 404, _url.fullPath);
             }
         }
     }
