@@ -27,30 +27,37 @@ public class UrlClass {
         parameters = new HashMap<String, String>();
         file = new FileThing();
         splitFullPath = null;
-        this.parseUrl();
     }
 
-    private void parseUrl() {
-        String[] urlParts = rawUrl.split("\\?");
-        this.fullPath = urlParts[0];
-        String[] pathParts = fullPath.split("/");
-        if(pathParts.length > 0) {
-            pluginPath = pathParts[1];
-            splitFullPath =  Arrays.copyOfRange(pathParts, 1, pathParts.length);
-        }
-        else {
-            pluginPath = fullPath = "/";
-            return;
-        }
-        String[] foo = pathParts[pathParts.length - 1].split("\\.");
-        if(foo.length > 1) {
-            file.name = foo[0];
-            file.ending = foo[1];
-        }
-        if(urlParts.length > 1){
-            for(String part : urlParts[1].split("&")){
-                parameters.put(part.split("=")[0], part.split("=")[1]);
+    public boolean parseUrl() {
+        try{
+            String[] urlParts = rawUrl.split("\\?");
+            this.fullPath = urlParts[0];
+            String[] pathParts = fullPath.split("/");
+            if(pathParts.length > 0) {
+                pluginPath = pathParts[1];
+                splitFullPath =  Arrays.copyOfRange(pathParts, 1, pathParts.length);
             }
+            else {
+                pluginPath = fullPath = "/";
+                return true;
+            }
+            String[] foo = pathParts[pathParts.length - 1].split("\\.");
+            if(foo.length > 1) {
+                file.name = foo[0];
+                file.ending = foo[1];
+            }
+            if(urlParts.length > 1){
+                for(String part : urlParts[1].split("&")){
+                    parameters.put(part.split("=")[0], part.split("=")[1]);
+                }
+            }
+            return true;
+        }
+        catch(ArrayIndexOutOfBoundsException | NullPointerException | IllegalArgumentException e){
+            System.out.println("URL parse error!");
+            e.printStackTrace();
+            return false;
         }
     }
 }

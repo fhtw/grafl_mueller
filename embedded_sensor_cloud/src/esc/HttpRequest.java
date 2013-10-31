@@ -24,7 +24,12 @@ public class HttpRequest {
         this._url = new UrlClass(s[1]);
         this._httpVersion = s[2];
         this._socket = socket;
-        this.checkPluginAcceptance();
+        if(_url.parseUrl()){
+            this.checkPluginAcceptance();
+        }
+        else{
+            new HttpResponse(_socket, 500, "");
+        }
     }
 
     private void checkPluginAcceptance()
@@ -64,3 +69,4 @@ public class HttpRequest {
         }
     }
 }
+                         f
