@@ -14,16 +14,20 @@
 #include <string>
 #include <string.h>
 #include <iostream>
+#include <termios.h>
+
 #define BUF 1024
 
 using namespace std;
+
+string hideInput();
 
 int main (int argc, char **argv)
 {
     int create_socket, portNb, check, size, i;
     char buffer[BUF];
     struct sockaddr_in address;
-    string lastCommand;
+    string lastCommand, password;
 
     if( argc < 2 )
     {
@@ -52,6 +56,11 @@ int main (int argc, char **argv)
         {
             buffer[size]= '\0';
             printf("%s",buffer);
+            if(strncmp(buffer,"ERR",3) == 0) 
+            {
+            	close (create_socket);
+                return EXIT_FAILURE;            	
+            }
         }
     }
     else
@@ -59,7 +68,7 @@ int main (int argc, char **argv)
         perror("Connect error - no server available");
         return EXIT_FAILURE;
     }
-
+	
     do
     {
         /*command*/
@@ -72,18 +81,26 @@ int main (int argc, char **argv)
         }
         buffer[size]= '\0';
         printf("%s",buffer);
-        fgets (buffer, BUF, stdin);
-        lastCommand = string(buffer);
-        send(create_socket, buffer, strlen(buffer)-1, 0);
-        
-
-        
+        if( strncmp(buffer,"ERR",3) == 0) return EXIT_FAILURE;
+        if( strncmp(buffer,"Password: ",10) == 0) 
+        {
+        	password = hideInput();
+        	strcpy(buffer,password.c_str());
+        	send(create_socket, buffer, strlen(buffer), 0);
+        }
+        else
+        {
+        	fgets (buffer, BUF, stdin);
+        	lastCommand = string(buffer);
+    		send(create_socket, buffer, strlen(buffer)-1, 0);
+        }
+      
         /*** SEND ***/
         if(lastCommand == "send\n")
         {
             check = 0;
             /* Sender, Receiver, Subject */
-            for(i = 0; i <= 3; i++)
+            for(i = 0; i < 3; i++)
             {
                 size=recv(create_socket,buffer,BUF-1, 0);
                 if(size < 0)
@@ -104,6 +121,15 @@ int main (int argc, char **argv)
             /* Content */
             if (check == 0)
             {
+            	size=recv(create_socket,buffer,BUF-1, 0);
+                if(size < 0)
+                {
+                    perror("recv error");
+                    return EXIT_FAILURE;
+                }
+                buffer[size]= '\0';
+                printf("%s",buffer);
+                
                 do
                 {
                     fgets (buffer, BUF, stdin);
@@ -205,4 +231,20 @@ int main (int argc, char **argv)
     while (lastCommand != "quit\n");
     close (create_socket);
     return EXIT_SUCCESS;
+}
+
+string hideInput()
+{
+	termios oldt;
+    tcgetattr(STDIN_FILENO, &oldt);
+    termios newt = oldt;
+    newt.c_lflag &= ~ECHO;
+    tcsetattr(STDIN_FILENO, TCSANOW, &newt);
+
+    string s;
+    getline(cin, s);
+    
+    tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
+    
+    return s;
 }

@@ -26,19 +26,33 @@
 #include <thread>
 #include <mutex>
 #include <ldap.h>
+#include "dependencies/banList.h"
 
 #define BUF 1024
 #define MAX_CLIENT 256
+/*** LDAP Config ***/
+#define LDAP_HOST "ldap.technikum-wien.at"
+#define LDAP_PORT 389
+#define SEARCHBASE "dc=technikum-wien,dc=at"
+#define SCOPE LDAP_SCOPE_SUBTREE
+#define BIND_USER NULL		/* anonymous bind with user and pw NULL */
+#define BIND_PW NULL
+/*** Server Options ***/
+#define BANTIME 1800	//in seconds 
 #define DEBUG 0
-#define LDAP_SERVER "ldap.technikum-wien.at:389"
+
 
 
 using namespace std;
-int handleClientInput(int new_socket, string mailDir, string IP, int port);
+int handleClientInput(int new_socket, string mailDir, string IP, int port, banHandler *banIP);
 int delMail(int id, string path, list<string> messageList);
 list<string> getFileList(string mailDirectory, string userName);
+string checkFileCollision(string userPath, string userFileName, bool hashFlag);
+int ldapAuthentification(string user, string pw);
 
-mutex acceptMutex, outputMutex;
+list<string> userLoggedIn;
+list<string>::iterator userIter;
+mutex outputMutex;
 
 
 int main(int argc, char** argv)
@@ -47,10 +61,11 @@ int main(int argc, char** argv)
     int create_socket, new_socket, clientCount=0;
     socklen_t addrlen;
     char buffer[BUF];
-    int size, portNb;
+    int portNb;
     struct sockaddr_in address, cliaddress;
     string mailDir;
     thread t[MAX_CLIENT]; 
+    string banNotification;
     
     if (argc < 2)
     {
@@ -87,30 +102,35 @@ int main(int argc, char** argv)
     listen (create_socket, 5);
 
     addrlen = sizeof (struct sockaddr_in);
-
+	banHandler *foo = new banHandler(BANTIME);
+	userLoggedIn.clear();
+	
     while (1)
     {
-    
-		/***
-			ToDo:
-			-IMPLEMENT LDAP
-		***/
         printf("Waiting for connections...\n");
         
-        acceptMutex.lock();
         new_socket = accept ( create_socket, (struct sockaddr *) &cliaddress, &addrlen );
 		
         if (new_socket > 0)
         {
-            printf ("Client [%d] connected from %s:%d...\n", clientCount, inet_ntoa (cliaddress.sin_addr),ntohs(cliaddress.sin_port)); 
-            strcpy(buffer,"Welcome to TWMailer!\n");
-            send(new_socket, buffer, strlen(buffer),0);            
-            t[clientCount] = thread(handleClientInput, new_socket, mailDir, string(inet_ntoa (cliaddress.sin_addr)),ntohs(cliaddress.sin_port));
-            clientCount++;
-        }
-        acceptMutex.unlock();
-        
-               
+        	if((foo->checkIP(inet_ntoa (cliaddress.sin_addr))) == 0)
+        	{
+	            printf ("Client [%d] connected from %s:%d...\n", clientCount, inet_ntoa (cliaddress.sin_addr),ntohs(cliaddress.sin_port)); 
+	            strcpy(buffer,"Welcome to TWMailer!\n");
+	            send(new_socket, buffer, strlen(buffer),0);            
+	            t[clientCount] = thread(handleClientInput, new_socket, mailDir, string(inet_ntoa (cliaddress.sin_addr)),ntohs(cliaddress.sin_port), foo);
+	            clientCount++;
+	        }
+	        else
+	        {
+	        	printf ("Client connected from %s:%d but connection is refused. (time left: %lf s.)\n", inet_ntoa (cliaddress.sin_addr),ntohs(cliaddress.sin_port),foo->checkIP(inet_ntoa (cliaddress.sin_addr))); 
+	           	banNotification = "ERR - Your IP is banned for " + to_string(foo->checkIP(inet_ntoa (cliaddress.sin_addr))) + " seconds!\n";
+	            strcpy(buffer,banNotification.c_str());
+	            send(new_socket, buffer, strlen(buffer),0); 
+	            close(new_socket); 
+	        }
+	        
+        }              
     }
     for(int i = 0; i <= clientCount; i++) 
     {
@@ -123,90 +143,89 @@ int main(int argc, char** argv)
 
 /***
 	TODO:
+		-LDAP - DONE
+		-ban IP after 3 failed logins - DONE
+		-Multi receiver - DONE
+		
+		-change sender to userName
+		-read => download
 		-Attachments
-		-LDAP
-		-ban IP after 3 failed logins
+		-Attachment multirecv
 ***/
 
-int handleClientInput(int new_socket, string mailDir, string IP, int port)
+int handleClientInput(int new_socket, string mailDir, string IP, int port, banHandler *banIP)
 {
-	int size, retCode, recID;
+	int size, retCode, recID, loginCount = 0;
+	bool correct;
 	char buffer[BUF];
-	string userPath,userFileName, clientUserName, collision, receiver, sender, subject;
-	hash<string> str_hash;
+	string userName, userPW;
+	string userPath,userFileName, clientUserName, collision, sender, subject, recvToSplit, receiver, recvList;
 	list<string> mailList;
+	list<string> recvToken;
+	list<string>::iterator strIter;
 	
- 	/*** LDAP ***/
-    LDAP        *ld, *ld2;
-    int         rc;
-    char        bind_dn[100];
-    LDAPMessage *result, *e;
-    char *dn;
-    int has_value;
-	/*** LDAP authentification ***/
-	
-	//send: "Username: " ; recv: buffer 
-	sprintf( bind_dn, "uid=%s,dc=technikum-wien,dc=at", buffer );
-    printf( "Connecting as %s...\n", bind_dn );
-
-    if( ldap_initialize( &ld, LDAP_SERVER ) )
-    {
-        perror( "ldap_initialize" );
-        EXIT_FAILURE;
-    }
-
-    rc = ldap_simple_bind_s( ld, bind_dn, "ashwin" );
-    if( rc != LDAP_SUCCESS )
-    {
-        fprintf(stderr, "ldap_simple_bind_s: %s\n", ldap_err2string(rc) );
-        EXIT_FAILURE;
-    }
-
-    printf( "Successful authentication\n" );
-
-   	rc = ldap_search_ext_s(ld, "dc=technikum-wien,dc=at", LDAP_SCOPE_SUBTREE, "sn=Müller", NULL, 0, NULL, NULL, NULL, 0, &result);
-    if ( rc != LDAP_SUCCESS ) {
-        fprintf(stderr, "ldap_search_ext_s: %s\n", ldap_err2string(rc));
-    }
-
-    for ( e = ldap_first_entry( ld, result ); e != NULL; e = ldap_next_entry( ld, e ) ) {
-        if ( (dn = ldap_get_dn( ld, e )) != NULL ) {
-            printf( "dn: %s\n", dn );
-            has_value = ldap_compare_s( ld, dn, "userPassword", "secret" ); 
-            switch ( has_value ) { 
-                case LDAP_COMPARE_TRUE: 
-                    printf( "Works.\n"); 
-                    break; 
-                case LDAP_COMPARE_FALSE: 
-                    printf( "Failed.\n"); 
-                    break; 
-                default: 
-                    ldap_perror( ld, "ldap_compare_s" ); 
-                    EXIT_FAILURE;
-            } 
-            ldap_memfree( dn );
+ 	/*** 
+ 		Authentification 
+ 			-3 times wrong => IP temporary banned! (max ban time --> see define)
+ 	***/
+ 	banIP->addIP(IP);
+ 	while(1)
+ 	{
+ 		// User 
+ 		strcpy(buffer,"Username: ");
+        send(new_socket, buffer, strlen(buffer),0);
+        size = recv (new_socket, buffer, BUF-1, 0);
+        if( size <= 0)
+        {
+            perror("recv error (Username)");
+            return EXIT_FAILURE;
         }
-    }
-
-  	/***Second bind***/
-	if ( (dn = ldap_get_dn( ld, e )) != NULL ) 
-	{
-        printf( "dn: %s\n", dn );
-        /* rebind */
-        ldap_initialize(&ld2, LDAP_SERVER);
-        rc = ldap_simple_bind_s(ld2, dn, "secret");
-        printf("%d\n", rc);
-        if (rc != 0) {
-            printf("Failed.\n");
-        } else {
-            printf("Works.\n");
-            ldap_unbind(ld2);
+        buffer[size]= '\0';
+        userName = string(buffer);
+        // Password
+        strcpy(buffer,"Password: ");
+        send(new_socket, buffer, strlen(buffer),0);
+        size = recv (new_socket, buffer, BUF-1, 0);
+        if( size <= 0)
+        {
+            perror("recv error (Password)");
+            return EXIT_FAILURE;
         }
-        ldap_memfree( dn );
-    }
+        buffer[size]= '\0';
+        userPW = string(buffer);
+        //LDAP
+        if(ldapAuthentification(userName, userPW) == 0) break;
+        else
+        {
+    		banIP->checkIP(IP);
+        	if(loginCount != 2) 
+        	{
+        		strcpy(buffer,"\nWrong Password or Username");
+        		send(new_socket, buffer, strlen(buffer),0);
+        	}
+        }
+        if((++loginCount) == 3) 
+        {
+        	strcpy(buffer,"ERR - Your IP got temporarily banned!\n");
+        	send(new_socket, buffer, strlen(buffer),0);
+        	close (new_socket);	
+        	return -1;
+        }
+ 	}
+ 	for(userIter = userLoggedIn.begin(); userIter != userLoggedIn.end(); ++userIter)
+ 	{
+ 		if( (*userIter) == userName)
+ 		{
+ 			strcpy(buffer,"ERR - User is already logged in!\n");
+        	send(new_socket, buffer, strlen(buffer),0);
+        	close (new_socket);	
+        	return -1;
+ 		} 		
+ 	}
+ 	userLoggedIn.push_back(userName);
+ 	
 	
-	
-	/****************************/
+	/***********************/
 	
 	do
     {
@@ -214,7 +233,7 @@ int handleClientInput(int new_socket, string mailDir, string IP, int port)
         send(new_socket, buffer, strlen(buffer),0);
 		if(DEBUG==1) cout << "Buffer@Start:" << buffer << endl;
         size = recv (new_socket, buffer, BUF-1, 0);
-        if( size < 0)
+        if( size <= 0)
         {
             perror("recv error (command)");
             return EXIT_FAILURE;
@@ -235,7 +254,7 @@ int handleClientInput(int new_socket, string mailDir, string IP, int port)
         /*** SEND ***/
         if(strncmp (buffer, "send", 4)  == 0)
         {
-        	
+        	correct = false;
             /* sender */
             strcpy(buffer, "Sender(max. 8 character): ");
             send(new_socket, buffer, strlen(buffer),0);
@@ -247,78 +266,102 @@ int handleClientInput(int new_socket, string mailDir, string IP, int port)
             {
                 buffer[size] = '\0';
                 sender = string(buffer);
-                strcpy(buffer, "Receiver (max. 8 character): ");
-                send(new_socket, buffer, strlen(buffer),0);
                 /* receiver */
+                strcpy(buffer, "Receiver (max. 8 character) split multiple with \",\": ");
+                send(new_socket, buffer, strlen(buffer),0);
+                
                 size = recv(new_socket,buffer,BUF-1, 0);
-                if(size > 0 && size <= 8 && strcmp(buffer,"") != 0)
+                if(size > 0 && strcmp(buffer,"") != 0)
                 {
                     buffer[size] = '\0';
-                    receiver = string(buffer);
-                    strcpy(buffer, "Subject (max. 80 character): ");
-                    send(new_socket, buffer, strlen(buffer),0);
+                    recvList = recvToSplit = string(buffer);
+                    correct = true;
+                    
+                    string delimiter = ",";
+					size_t pos = 0;
+					
+					while ((pos = recvToSplit.find(delimiter)) != string::npos) {
+					    recvToken.push_back(recvToSplit.substr(0, pos));
+					    recvToSplit.erase(0, pos + delimiter.length());
+					}
+					recvToken.push_back(recvToSplit);
+										
+					for(strIter = recvToken.begin(); strIter != recvToken.end(); strIter++)
+					{
+						if(DEBUG == 1) cout << "RecvToken: " << (*strIter) << std::endl; 
+						if((*strIter).size() > 8 || (*strIter).size() == 0) 
+						{
+							strcpy(buffer,"ERR - Please try again with a correct Receiver (max. 8 character per receiver)!\n");
+							correct = false;
+						}
+					}
+					
+					
+					if(correct)
+					{
+						receiver = recvToken.front();
+						recvToken.pop_front(); //delete 1st element
+						
+	                    /* subject */
+	                    strcpy(buffer, "Subject (max. 80 character): ");
+	                    send(new_socket, buffer, strlen(buffer),0);
+	                    
+	                    size = recv(new_socket,buffer,BUF-1, 0);
+	                    if(size > 0 && size <= 80 && strcmp(buffer,"") != 0)
+	                    {
+	                        buffer[size] = '\0';
+	                        mailList = getFileList(mailDir, receiver);
+	                        subject = string(buffer);
+	                        
+	                        /* content */
+	                        userPath = mailDir + "/" + receiver + "/";
+	                        userFileName = receiver + sender + subject;
+	                        
+	                        collision = checkFileCollision(userPath,userFileName,true);
+	                        ofstream newMessage;
+	                        newMessage.open(userPath + collision);
+	                        newMessage << sender << endl;
+	                        newMessage << recvList << endl;
+	                        newMessage << subject << endl;
 
-                    /* subject */
-                    size = recv(new_socket,buffer,BUF-1, 0);
-                    if(size > 0 && size <= 80 && strcmp(buffer,"") != 0)
-                    {
-                        buffer[size] = '\0';
-                        mailList = getFileList(mailDir, receiver);
-                        subject = string(buffer);
-                        /* content */
+	                        strcpy(buffer, "Content (quit with \".\"): ");
+	                        send(new_socket, buffer, strlen(buffer),0);
 
-                        /* string to hash to string ==> Filename*/
-                        userPath = mailDir + "/" + receiver + "/";
-                        userFileName = receiver + sender + subject;
-                        stringstream ss;
-                        ss << str_hash(userFileName);
-                        userFileName = ss.str();
-                        collision = userFileName;
-                        /* check if file exists */
-                        int count = 0,check = 0;
-                        while(check != 1)
-                        {
-                            ifstream checkFile(userPath+collision);
-                            if(checkFile.fail()) check = 1;
-                            else
-                            {
-                                collision = userFileName;
-                                collision  += to_string(++count);
-                                checkFile.close();
-
-                            }
-                        }
-
-                        ofstream newMessage;
-                        newMessage.open(userPath + collision);
-                        newMessage << sender << endl;
-                        newMessage << receiver << endl;
-                        newMessage << subject << endl;
-
-                        strcpy(buffer, "Content (quit with \".\"): ");
-                        send(new_socket, buffer, strlen(buffer),0);
-
-                        do
-                        {
-                            size = recv(new_socket,buffer,BUF-1, 0);
-                            if(size > 0)
-                            {
-                                buffer[size] = '\0';
-                                if(strcmp(buffer,".\n") != 0) newMessage << buffer;
-                            }
-                        }
-                        while(strcmp(buffer,".\n") != 0);
-                        newMessage.close();
-                        strcpy(buffer, "OK\n");
-                    }
-                    else
-                    {
-                        strcpy(buffer,"ERR - Please try again with a correct Subject (max. 80 character)!\n");
-                    }
-                }
-                else
-                {
-                    strcpy(buffer,"ERR - Please try again with a correct Receiver (max. 8 character)!\n");
+	                        do
+	                        {
+	                            size = recv(new_socket,buffer,BUF-1, 0);
+	                            if(size > 0)
+	                            {
+	                                buffer[size] = '\0';
+	                                if(strcmp(buffer,".\n") != 0) newMessage << buffer;
+	                            }
+	                        }
+	                        while(strcmp(buffer,".\n") != 0);
+	                        newMessage.close();
+	                        strcpy(buffer, "OK\n");
+	                        
+	                        
+	                        string ccFileName, ccUserPath;
+	                        
+	                        /*** copy files to other receivers ***/
+	                        for(strIter = recvToken.begin(); strIter != recvToken.end(); strIter++)
+							{
+								ccUserPath = mailDir + "/" + (*strIter) + "/";
+	                        	ccFileName = (*strIter) + sender + subject;
+	                        	mailList = getFileList(mailDir, (*strIter));
+	                        	
+								ifstream  src(userPath + collision, ios::binary);
+								
+								ccFileName = checkFileCollision(ccUserPath,ccFileName,true);
+								ofstream  dst(ccUserPath + ccFileName, ios::binary);
+								dst << src.rdbuf();
+							}
+	                    }
+	                    else
+	                    {
+	                        strcpy(buffer,"ERR - Please try again with a correct Subject (max. 80 character)!\n");
+	                    }
+	            	}
                 }
             }
             else
@@ -326,6 +369,7 @@ int handleClientInput(int new_socket, string mailDir, string IP, int port)
                 strcpy(buffer,"ERR - Please try again with a correct Sender (max. 8 character)!\n");
             }
             send(new_socket, buffer, strlen(buffer),0);
+            recvToken.clear();
         }
         /*** LIST ***/
         if(strncmp (buffer, "list", 4)  == 0)
@@ -416,7 +460,7 @@ int handleClientInput(int new_socket, string mailDir, string IP, int port)
                                 strcpy(buffer,(line + "\n").c_str());
                                 send(new_socket, buffer, strlen(buffer),0);
                             }
-                            mail.close();
+                            mail.close();mailList = getFileList(mailDir, clientUserName);
                             strcpy(buffer,"OK\n");
                         }
                         else
@@ -480,6 +524,8 @@ int handleClientInput(int new_socket, string mailDir, string IP, int port)
 
     }
     while (strncmp (buffer, "quit", 4)  != 0);
+    
+    userLoggedIn.remove(userName);
     close (new_socket);	
     return 1;
 }
@@ -543,4 +589,119 @@ int delMail(int id, string path, list<string> messageList)
         }
     }
     return -1;
+}
+
+string checkFileCollision(string userPath, string userFileName, bool hashFlag)
+{
+	hash<string> str_hash;
+	string collision;
+	int count = 0, check = 0;
+	
+	if(hashFlag)
+	{
+		stringstream ss;
+    	ss << str_hash(userFileName);
+    	userFileName = ss.str();
+    }
+    collision = userFileName;
+    /* check if file exists */
+    while(check != 1)
+    {
+        ifstream checkFile(userPath+collision);
+        if(checkFile.fail()) check = 1;
+        else
+        {
+            collision = userFileName;
+            collision  += to_string(++count);
+            checkFile.close();
+        }
+    }
+    return collision;
+}
+
+int ldapAuthentification(string user, string pw)
+{
+	LDAP *ld;			/* LDAP resource handle */
+    LDAPMessage *result, *e;	/* LDAP result handle */
+    BerElement *ber;		/* array of attributes */
+    char *attribute;
+    char **vals;
+    string dn;
+    int i, rc=0;
+    char *attribs[3];		/* attribute array for search */
+
+	string FILTER = "(uid="+ user +")";
+	
+    attribs[0]=strdup("uid");		/* return uid of entries */
+    attribs[1]=NULL;		/* array must be NULL terminated */
+
+
+    /* setup LDAP connection */
+    if ((ld=ldap_init(LDAP_HOST, LDAP_PORT)) == NULL)
+    {
+        perror("ldap_init failed");
+        return -1;
+    }
+
+    printf("connected to LDAP server %s on port %d\n",LDAP_HOST,LDAP_PORT);
+
+    /* anonymous bind */
+    rc = ldap_simple_bind_s(ld,BIND_USER,BIND_PW);
+
+    if (rc != LDAP_SUCCESS)
+    {
+        fprintf(stderr,"LDAP error: %s\n",ldap_err2string(rc));
+        return -1;
+    }
+    else
+    {
+        printf("bind successful\n");
+    }
+
+    /* perform ldap search */
+    rc = ldap_search_s(ld, SEARCHBASE, SCOPE, FILTER.c_str(), attribs, 0, &result);
+
+    if (rc != LDAP_SUCCESS)
+    {
+        fprintf(stderr,"LDAP search error: %s\n",ldap_err2string(rc));
+        return -1;
+    }
+
+    for (e = ldap_first_entry(ld, result); e != NULL; e = ldap_next_entry(ld,e))
+    {
+        dn = string(ldap_get_dn(ld,e));
+
+        // Now print the attributes and values of each found entry
+        for (attribute = ldap_first_attribute(ld,e,&ber); attribute!=NULL; attribute = ldap_next_attribute(ld,e,ber))
+        {
+            if ((vals=ldap_get_values(ld,e,attribute)) != NULL)
+            {
+                for (i=0; vals[i]!=NULL; i++)
+                {
+                    printf("\t%s: %s\n",attribute,vals[i]);
+                }
+                // free memory used to store the values of the attribute /
+                ldap_value_free(vals);
+            }
+            // free memory used to store the attribute
+            ldap_memfree(attribute);
+        }
+        // free memory used to store the value structure
+        if (ber != NULL) ber_free(ber,0);
+
+    }
+
+    rc = ldap_simple_bind_s(ld,dn.c_str(),pw.c_str());
+
+    if (rc != LDAP_SUCCESS)
+    {
+        fprintf(stderr,"LDAP error: %s\n",ldap_err2string(rc));
+        return -1;
+    }
+ 
+    /* free memory used for result */
+    ldap_msgfree(result);
+    free(attribs[0]);
+    ldap_unbind(ld);
+    return 0;
 }
