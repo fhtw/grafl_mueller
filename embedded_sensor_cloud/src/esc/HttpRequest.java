@@ -24,7 +24,7 @@ public class HttpRequest {
         this._url = new UrlClass(s[1]);
         this._httpVersion = s[2];
         this._socket = socket;
-        if(_url.parseUrl()){
+		if(_url.parseUrl()){
             this.checkPluginAcceptance();
         }
         else{
@@ -49,7 +49,7 @@ public class HttpRequest {
                 pluginList.add((IPlugin) o);
             }
             for(IPlugin iPlugin : pluginList){
-                if(iPlugin.acceptRequest(_url.pluginPath)){
+                if(iPlugin.acceptRequest(_url.getPluginPath())){
                     iPlugin.runPlugin(_socket);
                     requestProcessed = true;
                     break;
@@ -59,14 +59,13 @@ public class HttpRequest {
         catch (IOException | NullPointerException | ClassNotFoundException | InstantiationException |
                 IllegalAccessException e) {
             e.printStackTrace();
-            new HttpResponse(_socket, 500, _url.fullPath);
+            new HttpResponse(_socket, 500, _url.getFullPath());
         }
         finally{
             if(!requestProcessed){
                 //page not found, yo
-                new HttpResponse(_socket, 404, _url.fullPath);
+                new HttpResponse(_socket, 404, _url.getFullPath());
             }
         }
     }
 }
-                         f

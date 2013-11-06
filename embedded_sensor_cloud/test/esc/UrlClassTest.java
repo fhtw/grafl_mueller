@@ -20,9 +20,9 @@ public class UrlClassTest {
         UrlClass url = new UrlClass("/valid/simple/url");
         String[] expectedPath = {"valid", "simple", "url"};
 
-        assertEquals("valid", url.pluginPath);
-        assertArrayEquals(expectedPath, url.splitFullPath);
-        assertTrue(url.parameters.isEmpty());
+        assertEquals("valid", url.getPluginPath());
+        assertArrayEquals(expectedPath, url.getSplitFullPath());
+        assertTrue(url.getParameters().isEmpty());
     }
 
     @Test
@@ -30,24 +30,24 @@ public class UrlClassTest {
         UrlClass url = new UrlClass("/valid/complex/url.xml?parameter1=123&parameter2=asdf");
         String[] expectedPath =  {"valid", "complex", "url.xml"};
         FileThing expectedFile = new FileThing();
-        expectedFile.name = "url";
-        expectedFile.ending = "xml";
+        expectedFile.setName("url");
+        expectedFile.setExtension("xml");
         Map expectedMap = new HashMap<String, String>();
         expectedMap.put("parameter1", "123");
         expectedMap.put("parameter2", "asdf");
 
-        assertEquals(expectedMap, url.parameters);
-        assertEquals(expectedFile.name, url.file.name);
-        assertEquals(expectedFile.ending, url.file.ending);
-        assertArrayEquals(expectedPath, url.splitFullPath);
-        assertEquals("valid", url.pluginPath);
+        assertEquals(expectedMap, url.getParameters());
+        assertEquals(expectedFile.getName(), url.getFile().getName());
+        assertEquals(expectedFile.getExtension(), url.getFile().getExtension());
+        assertArrayEquals(expectedPath, url.getSplitFullPath());
+        assertEquals("valid", url.getPluginPath());
     }
 
     @Test
     public void rootUrlPasses(){
         UrlClass url = new UrlClass("/");
 
-        assertEquals("/", url.pluginPath);
-        assertTrue(url.parameters.isEmpty());
+        assertEquals("/", url.getPluginPath());
+        assertTrue(url.getParameters().isEmpty());
     }
 }

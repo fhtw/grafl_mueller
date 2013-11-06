@@ -11,11 +11,11 @@ import java.util.Map;
  */
 public class UrlClass {
     private String rawUrl;
-    public String fullPath;
-    public String[] splitFullPath;
-    public Map parameters;
-    public String pluginPath;
-    public FileThing file;
+    private String fullPath;
+    private String[] splitFullPath;
+    private Map parameters;
+    private String pluginPath;
+    private FileThing file;
 
     UrlClass(String raw) {
         try {
@@ -27,6 +27,29 @@ public class UrlClass {
         parameters = new HashMap<String, String>();
         file = new FileThing();
         splitFullPath = null;
+    }
+
+    public String[] getSplitFullPath(){
+        return splitFullPath;
+    }
+    public String getRawUrl(){
+        return rawUrl;
+    }
+
+    public String getFullPath(){
+        return fullPath;
+    }
+
+    public String getPluginPath(){
+        return pluginPath;
+    }
+
+    public Map getParameters(){
+        return parameters;
+    }
+
+    public FileThing getFile(){
+        return file;
     }
 
     public boolean parseUrl() {
@@ -63,6 +86,22 @@ public class UrlClass {
 }
 
 class FileThing {
-    public String name;
-    public String ending;
+    private String name;
+    private String extension;
+
+    String getName(){
+        return name;
+    }
+
+    void setName(String name){
+        this.name = name;
+    }
+
+    String getExtension(){
+        return extension;
+    }
+
+    void setExtension(String extension){
+        this.extension = extension;
+    }
 }
