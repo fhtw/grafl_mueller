@@ -13,7 +13,7 @@ public class UrlClass {
     private String rawUrl;
     private String fullPath;
     private String[] splitFullPath;
-    private Map parameters;
+    private HashMap<String, String> parameters;
     private String pluginPath;
     private FileThing file;
 
@@ -24,7 +24,7 @@ public class UrlClass {
             System.out.println("Uh oh, something bad happend!");
             return;
         }
-        parameters = new HashMap<String, String>();
+        parameters = new HashMap<>();
         file = new FileThing();
         splitFullPath = null;
     }
@@ -44,7 +44,7 @@ public class UrlClass {
         return pluginPath;
     }
 
-    public Map getParameters(){
+    public HashMap getParameters(){
         return parameters;
     }
 
@@ -67,13 +67,11 @@ public class UrlClass {
             }
             String[] foo = pathParts[pathParts.length - 1].split("\\.");
             if(foo.length > 1) {
-                file.name = foo[0];
-                file.ending = foo[1];
+                file.setName(foo[0]);
+                file.setExtension(foo[1]);
             }
             if(urlParts.length > 1){
-                for(String part : urlParts[1].split("&")){
-                    parameters.put(part.split("=")[0], part.split("=")[1]);
-                }
+                parameters = parseParameters(urlParts[1]);
             }
             return true;
         }
@@ -81,6 +79,32 @@ public class UrlClass {
             System.out.println("URL parse error!");
             e.printStackTrace();
             return false;
+        }
+    }
+
+    public HashMap<String, String> parseParameters(String parameterString){
+        HashMap foo = new HashMap<String, String>();
+        try{
+            if(parameterString != null && parameterString != "" && parameterString.length() > 1){
+                String[] bar = parameterString.split("&");
+                if(bar.length > 0)
+                {
+                    for(String part : bar){
+                        String[] temp = part.split("=");
+                        if(temp.length == 2)
+                        {
+                            foo.put(temp[0], temp[1]);
+                        }
+                    }
+                }
+            }
+        }
+        catch(ArrayIndexOutOfBoundsException | NullPointerException | IllegalArgumentException e){
+            System.out.println("Error parsing parameters!");
+            e.printStackTrace();
+        }
+        finally{
+            return foo;
         }
     }
 }

@@ -2,6 +2,7 @@ package esc;
 
 import static org.junit.Assert.*;
 
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -18,6 +19,7 @@ public class UrlClassTest {
     @Test
     public void simpleValidUrlPasses() {
         UrlClass url = new UrlClass("/valid/simple/url");
+        url.parseUrl();
         String[] expectedPath = {"valid", "simple", "url"};
 
         assertEquals("valid", url.getPluginPath());
@@ -28,11 +30,12 @@ public class UrlClassTest {
     @Test
     public void complexValidUrlPasses(){
         UrlClass url = new UrlClass("/valid/complex/url.xml?parameter1=123&parameter2=asdf");
+        url.parseUrl();
         String[] expectedPath =  {"valid", "complex", "url.xml"};
         FileThing expectedFile = new FileThing();
         expectedFile.setName("url");
         expectedFile.setExtension("xml");
-        Map expectedMap = new HashMap<String, String>();
+        HashMap expectedMap = new HashMap<String, String>();
         expectedMap.put("parameter1", "123");
         expectedMap.put("parameter2", "asdf");
 
@@ -46,8 +49,15 @@ public class UrlClassTest {
     @Test
     public void rootUrlPasses(){
         UrlClass url = new UrlClass("/");
+        url.parseUrl();
 
         assertEquals("/", url.getPluginPath());
         assertTrue(url.getParameters().isEmpty());
+    }
+
+    @Ignore
+    @Test
+    public void complexInvalidUrlPasses(){
+
     }
 }
