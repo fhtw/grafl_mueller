@@ -1,71 +1,51 @@
 package esc;
 
-import esc.plugin.IPlugin;
-
 
 import java.io.*;
 import java.net.Socket;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.HashMap;
 
 
 /**
  * @author Alex
  */
 public class HttpRequest {
-    private String _protocol;
-    private UrlClass _url;
-    private String _httpVersion;
-    private Socket _socket;
+    private String protocol;
+    private UrlClass url;
+    private String httpVersion;
+    private Socket socket;
+    private HashMap requestOptions;
 
-    HttpRequest(String[] s, Socket socket) throws UnsupportedEncodingException {
+    HttpRequest(String[] s, Socket socket) {
         //Request headline aufteilen und decodieren
-        this._protocol = s[0];
-        this._url = new UrlClass(s[1]);
-        this._httpVersion = s[2];
-        this._socket = socket;
-		if(_url.parseUrl()){
-            this.checkPluginAcceptance();
-        }
-        else{
-            new HttpResponse(_socket, 500, "");
+        this.protocol = s[0];
+        this.url = new UrlClass(s[1]);
+        this.httpVersion = s[2];
+        this.socket = socket;
+        this.requestOptions = new HashMap<String, String>();
+		if(! url.parseUrl()){
+            new HttpResponse(this.socket, 500, "");
         }
     }
 
-    private void checkPluginAcceptance()
-    {
-        //Alle plugins durchgehen ob sie den Request verarbeiten können/wollen
-        boolean requestProcessed = false;
-        try(BufferedReader fileReader = new BufferedReader(new FileReader("res/PluginConfig.conf"))){
-            String pluginName;
-            List<IPlugin> pluginList = new LinkedList<>();
-            CustomClassLoader classLoader = new CustomClassLoader();
-            //ClassLoader classLoader = new ClassLoader();
-            while((pluginName = fileReader.readLine()) != null){
-                //magic
-                Object o;
-                Class c = classLoader.loadClass(pluginName);
-                o = c.newInstance();
-                pluginList.add((IPlugin) o);
-            }
-            for(IPlugin iPlugin : pluginList){
-                if(iPlugin.acceptRequest(_url.getPluginPath())){
-                    iPlugin.runPlugin(_socket);
-                    requestProcessed = true;
-                    break;
-                }
-            }
-        }
-        catch (IOException | NullPointerException | ClassNotFoundException | InstantiationException |
-                IllegalAccessException e) {
-            e.printStackTrace();
-            new HttpResponse(_socket, 500, _url.getFullPath());
-        }
-        finally{
-            if(!requestProcessed){
+    public void processRequest(){
+
+        PluginManager pluginManager = new PluginManager(this.socket, this.url);
+
+        if(! pluginManager.findPlugin(url.getPluginPath())){
                 //page not found, yo
-                new HttpResponse(_socket, 404, _url.getFullPath());
-            }
+                new HttpResponse(this.socket, 404, url.getFullPath());
+        }
+
+    }
+
+    public void addLine(String line){
+        String[] foo = line.split(": ");
+        if(foo.length > 1){
+            this.requestOptions.put(foo[0], foo[1]);
+        }
+        else{
+            url.parseParameters(line);
         }
     }
 }

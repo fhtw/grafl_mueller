@@ -71,7 +71,7 @@ public class UrlClass {
                 file.setExtension(foo[1]);
             }
             if(urlParts.length > 1){
-                parameters = parseParameters(urlParts[1]);
+                parseParameters(urlParts[1]);
             }
             return true;
         }
@@ -82,7 +82,7 @@ public class UrlClass {
         }
     }
 
-    public HashMap<String, String> parseParameters(String parameterString){
+    public void parseParameters(String parameterString){
         HashMap foo = new HashMap<String, String>();
         try{
             if(parameterString != null && parameterString != "" && parameterString.length() > 1){
@@ -104,7 +104,7 @@ public class UrlClass {
             e.printStackTrace();
         }
         finally{
-            return foo;
+            this.parameters = foo;
         }
     }
 }

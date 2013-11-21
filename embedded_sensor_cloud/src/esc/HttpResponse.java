@@ -56,7 +56,7 @@ public class HttpResponse {
             System.out.println("Sent 404 Not Found to " + _socket.getRemoteSocketAddress().toString());
             out.flush();
         }
-        catch(IOException | NullPointerException e) {
+        catch(IOException | NullPointerException e ) {
             e.printStackTrace();
             this.internalServerError();
         }

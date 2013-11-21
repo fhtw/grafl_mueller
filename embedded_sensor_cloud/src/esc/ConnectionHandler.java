@@ -24,7 +24,15 @@ public class ConnectionHandler implements Runnable{
             requestHeaderLine = in.readLine();
             System.out.println(requestHeaderLine);
             //ruft funktion auf die die erste zeile verarbeitet
-            processRequestHeader(requestHeaderLine);
+            HttpRequest request = processRequestHeader(requestHeaderLine);
+            if(request != null){
+                String line;
+                while(!(line = in.readLine()).equals("")){
+                    request.addLine(line);
+                }
+                request.processRequest();
+            }
+
 
         } catch (IOException | NullPointerException e) {
                 e.printStackTrace();
@@ -32,7 +40,7 @@ public class ConnectionHandler implements Runnable{
         }
     }
 
-    private void processRequestHeader(String headLine) {
+    private HttpRequest processRequestHeader(String headLine) {
         try {
             if(headLine != null){
                 //not null -> aufteilen
@@ -42,7 +50,7 @@ public class ConnectionHandler implements Runnable{
                     if(splitHeadLine[2].startsWith("HTTP")) {
                         //ist HTTP request -> request in neuen HttpRequest kapseln
                         HttpRequest request = new HttpRequest(splitHeadLine, this._socket);
-                        return;
+                        return request;
                     }
                 }
             }
@@ -51,6 +59,7 @@ public class ConnectionHandler implements Runnable{
         catch (Exception e) {
             e.printStackTrace();
             new HttpResponse(_socket, 500,"bla");
+            return null;
         }
     }
 }

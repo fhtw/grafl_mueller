@@ -1,4 +1,4 @@
-package esc.plugin;
+package esc;
 
 import java.net.Socket;
 
@@ -9,5 +9,5 @@ import java.net.Socket;
 //Interface für die Plugins, zum Plugin pluginnen
 public interface IPlugin {
     public boolean acceptRequest(String requestUrl);
-    public void runPlugin(Socket socket);
+    public void runPlugin(Socket socket, UrlClass url);
 }
