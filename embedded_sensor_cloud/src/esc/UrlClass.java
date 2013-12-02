@@ -21,7 +21,7 @@ public class UrlClass {
         try {
             this.rawUrl = URLDecoder.decode(raw, "UTF-8");
         } catch (UnsupportedEncodingException e) {
-            System.out.println("Uh oh, something bad happend!");
+            System.out.println("Uh oh, something bad happened!");
             return;
         }
         parameters = new HashMap<>();
