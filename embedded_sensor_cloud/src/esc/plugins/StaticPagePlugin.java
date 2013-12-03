@@ -43,10 +43,8 @@ public class StaticPagePlugin implements IPlugin {
                 out.write("Connection: close \r\n\r\n");
                 byte[] b = new byte[fileReader.available()];
                 fileReader.read(b);
-                for(int i=0;i<b.length;i++)
-                {
-                    out.write(b[i]);
-                }
+                socket.getOutputStream().write(b);
+
                 System.out.println("Sent 200 OK to " + socket.getRemoteSocketAddress().toString());
                 out.flush();
             }
