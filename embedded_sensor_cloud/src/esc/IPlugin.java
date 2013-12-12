@@ -10,4 +10,5 @@ import java.net.Socket;
 public interface IPlugin {
     public boolean acceptRequest(String requestUrl);
     public void runPlugin(Socket socket, UrlClass url);
+    void returnPluginPage(Socket socket);
 }

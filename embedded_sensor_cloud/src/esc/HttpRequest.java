@@ -27,12 +27,12 @@ public class HttpRequest {
             new HttpResponse(this.socket, 500, "");
         }
     }
-
+    public String getProtocol(){
+        return this.protocol;
+    }
     public void processRequest(){
 
-        PluginManager pluginManager = new PluginManager(this.socket, this.url);
-
-        if(! pluginManager.findPlugin(url.getPluginPath())){
+        if(! Server.pluginManager.findPlugin(this.socket, this.url)){
                 //page not found, yo
                 new HttpResponse(this.socket, 404, url.getFullPath());
         }

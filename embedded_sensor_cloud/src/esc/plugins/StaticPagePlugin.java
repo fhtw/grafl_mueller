@@ -12,19 +12,20 @@ import java.nio.file.Files;
  * @author Alex
  */
 public class StaticPagePlugin implements IPlugin {
+    @Override
     public boolean acceptRequest(String requestUrl){
           if(requestUrl.equals("/") ||  requestUrl.equals("static")){
               return true;
           }
         return false;
 }
-
+    @Override
     public void runPlugin(Socket socket, UrlClass url){
 
-        String line, filePath;
+        String filePath;
         filePath = url.getFullPath();
         if(url.getPluginPath().equals("/")){
-             filePath = "static/index.html";
+             this.returnPluginPage(socket);
         }
         File requestedFile = new File("res/" + filePath);
         if(! requestedFile.exists()){
@@ -36,17 +37,17 @@ public class StaticPagePlugin implements IPlugin {
         }
         try(BufferedWriter out = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()))) {
             try(FileInputStream fileReader = new FileInputStream(requestedFile)){
-                int byteCount = 0;
                 out.write("HTTP/1.1 200 OK\r\n");
                 out.write("Content-Type: " + Files.probeContentType(requestedFile.toPath()) + "\r\n");
                 out.write("Content-Length: " + requestedFile.length() + "\r\n");
                 out.write("Connection: close \r\n\r\n");
                 byte[] b = new byte[fileReader.available()];
                 fileReader.read(b);
+                out.flush();
                 socket.getOutputStream().write(b);
 
                 System.out.println("Sent 200 OK to " + socket.getRemoteSocketAddress().toString());
-                out.flush();
+
             }
         }
         catch (FileNotFoundException e){
@@ -76,6 +77,32 @@ public class StaticPagePlugin implements IPlugin {
                 out.write("</ul>");
                 System.out.println("Sent 200 OK to " + socket.getRemoteSocketAddress().toString());
                 out.flush();
+        }
+        catch(IOException | NullPointerException  e) {
+            e.printStackTrace();
+            new HttpResponse(socket, 500, "bla");
+        }
+
+    }
+
+    @Override
+    public void returnPluginPage(Socket socket) {
+        String filePath = "static/index.html";
+        File requestedFile = new File("res/" + filePath);
+        try(BufferedWriter out = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()))) {
+            try(FileInputStream fileReader = new FileInputStream(requestedFile)){
+                out.write("HTTP/1.1 200 OK\r\n");
+                out.write("Content-Type: " + Files.probeContentType(requestedFile.toPath()) + "\r\n");
+                out.write("Content-Length: " + requestedFile.length() + "\r\n");
+                out.write("Connection: close \r\n\r\n");
+                byte[] b = new byte[fileReader.available()];
+                fileReader.read(b);
+                out.flush();
+                socket.getOutputStream().write(b);
+
+                System.out.println("Sent 200 OK to " + socket.getRemoteSocketAddress().toString());
+
+            }
         }
         catch(IOException | NullPointerException  e) {
             e.printStackTrace();

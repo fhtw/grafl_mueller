@@ -30,6 +30,9 @@ public class ConnectionHandler implements Runnable{
                 while(!(line = in.readLine()).equals("")){
                     request.addLine(line);
                 }
+                if(request.getProtocol().equals("POST")){
+                    request.addLine(in.readLine());
+                }
                 request.processRequest();
             }
 
@@ -54,7 +57,8 @@ public class ConnectionHandler implements Runnable{
                     }
                 }
             }
-            throw new Exception("Invalid HTTP request headline: " + headLine);
+            System.out.println("Invalid HTTP request headline: " + headLine);
+            return null;
         }
         catch (Exception e) {
             e.printStackTrace();

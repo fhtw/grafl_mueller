@@ -107,6 +107,10 @@ public class UrlClass {
             this.parameters = foo;
         }
     }
+
+    public boolean hasParameters(){
+        return !this.parameters.isEmpty();
+    }
 }
 
 class FileThing {

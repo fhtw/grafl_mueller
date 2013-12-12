@@ -12,12 +12,8 @@ public class PluginManager {
 
     private LinkedList<IPlugin> pluginList = new LinkedList<>();
     private CustomClassLoader classLoader = new CustomClassLoader();
-    private Socket socket;
-    private UrlClass url;
 
-    public PluginManager(Socket socket, UrlClass url){
-        this.socket = socket;
-        this.url = url;
+    public PluginManager(){
         //Alle plugins durchgehen ob sie den Request verarbeiten können/wollen
         try{
             File dir = new File("./src/esc/plugins");
@@ -33,15 +29,14 @@ public class PluginManager {
         catch ( NullPointerException | ClassNotFoundException | InstantiationException |
                 IllegalAccessException e) {
             e.printStackTrace();
-            new HttpResponse(this.socket, 500, url.getFullPath());
         }
     }
 
 
-    public boolean findPlugin(String pluginPath){
+    public boolean findPlugin(Socket socket, UrlClass url){
         for(IPlugin iPlugin : this.pluginList){
-            if(iPlugin.acceptRequest(pluginPath)){
-                iPlugin.runPlugin(this.socket, this.url);
+            if(iPlugin.acceptRequest(url.getPluginPath())){
+                iPlugin.runPlugin(socket, url);
                 return true;
             }
         }
