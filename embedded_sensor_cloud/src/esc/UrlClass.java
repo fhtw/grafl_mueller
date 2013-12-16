@@ -85,7 +85,7 @@ public class UrlClass {
     public void parseParameters(String parameterString){
         HashMap foo = new HashMap<String, String>();
         try{
-            if(parameterString != null && parameterString != "" && parameterString.length() > 1){
+            if(parameterString != null && !parameterString.equals("") && parameterString.length() > 1){
                 String[] bar = parameterString.split("&");
                 if(bar.length > 0)
                 {

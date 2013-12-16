@@ -14,11 +14,8 @@ import java.nio.file.Files;
 public class StaticPagePlugin implements IPlugin {
     @Override
     public boolean acceptRequest(String requestUrl){
-          if(requestUrl.equals("/") ||  requestUrl.equals("static")){
-              return true;
-          }
-        return false;
-}
+        return requestUrl.equals("/") || requestUrl.equals("static");
+    }
     @Override
     public void runPlugin(Socket socket, UrlClass url){
 

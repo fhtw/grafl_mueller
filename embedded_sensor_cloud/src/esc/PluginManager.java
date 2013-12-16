@@ -22,8 +22,10 @@ public class PluginManager {
                 //magic
                 Object o;
                 Class c = classLoader.loadClass("esc.plugins." + (file.getName()).split("\\.")[0]);
-                o = c.newInstance();
-                pluginList.add((IPlugin) o);
+                if(IPlugin.class.isAssignableFrom(c)){
+                    o = c.newInstance();
+                    pluginList.add((IPlugin) o);
+                }
             }
         }
         catch ( NullPointerException | ClassNotFoundException | InstantiationException |
