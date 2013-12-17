@@ -11,16 +11,17 @@ import java.util.LinkedList;
 public class PluginManager {
 
     private LinkedList<IPlugin> pluginList = new LinkedList<>();
-    private CustomClassLoader classLoader = new CustomClassLoader();
 
     public PluginManager(){
         //Alle plugins durchgehen ob sie den Request verarbeiten können/wollen
         try{
             File dir = new File("./src/esc/plugins");
             File[] fileList = dir.listFiles();
+            if (fileList == null) throw new AssertionError();
             for(File file : fileList){
                 //magic
                 Object o;
+                CustomClassLoader classLoader = new CustomClassLoader();
                 Class c = classLoader.loadClass("esc.plugins." + (file.getName()).split("\\.")[0]);
                 if(IPlugin.class.isAssignableFrom(c)){
                     o = c.newInstance();

@@ -11,8 +11,6 @@ import java.io.OutputStreamWriter;
 import java.net.Socket;
 import java.util.HashMap;
 import java.util.LinkedList;
-import java.util.Map;
-import java.util.Set;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.parsers.SAXParser;
 import javax.xml.parsers.SAXParserFactory;
@@ -23,12 +21,13 @@ import javax.xml.parsers.SAXParserFactory;
  */
 public class NaviPlugin implements IPlugin{
 
-    private String NAVI_HEAD = "<!DOCTYPE html><html><head><title>Embedded Sensor Cloud</title><link rel=\"styl" +
+    private final String NAVI_HEAD = "<!DOCTYPE html><html><head><title>Embedded Sensor Cloud</title><link rel=\"styl" +
             "esheet\" type=\"text/css\" href=\"/static/style.css\"/></head><body><h1>Navi-Plugin</h1><div>";
-     private String NAVI_REFRESH = "<div><form method=\"get\"><button type=\"submit\" name=\"refresh\" value=\"" +
-             "true\">Refresh</button></form></div>";
-    private String NAVI_FORM = "<form name = \"navi\" method = \"get\">Enter streetname here: <input type=\"tex" +
+    private final String NAVI_REFRESH = "<div><form method=\"get\"><button type=\"submit\" name=\"refresh\" value=\"t" +
+             "rue\">Refresh</button></form></div>";
+    private final String NAVI_FORM = "<form name = \"navi\" method = \"get\">Enter streetname here: <input type=\"tex" +
             "t\" name=\"street\"/> <input type=\"submit\" value=\"Submit\"/></form></div>";
+
     private HashMap<String, LinkedList<String>> naviEntires;
     private boolean formReady = false;
     private boolean isParsing = false;

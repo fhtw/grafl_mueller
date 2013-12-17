@@ -61,7 +61,6 @@ public class StaticPagePlugin implements IPlugin {
         File dir = new File("res/" + dirPath);
         String[] dirContent = dir.list();
         try(BufferedWriter out = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()))) {
-                int byteCount = 0;
                 out.write("HTTP/1.1 200 OK\r\n");
                 out.write("Content-Type: text/html\r\n");
                 out.write("Connection: close \r\n\r\n");

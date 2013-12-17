@@ -20,7 +20,6 @@ public class Server {
     *   Update auch dadrin
     *   Plugins nicht neu laden
     * */
-    public static HashMap<String, String> naviEntries = new HashMap<>();
     public static PluginManager pluginManager = new PluginManager();
 
     public static void main(String[] args) {

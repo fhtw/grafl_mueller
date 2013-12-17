@@ -12,8 +12,7 @@ public class TemperaturePlugin implements IPlugin{
     @Override
     public boolean acceptRequest(String requestUrl) {
 
-        if(requestUrl.equals("temp")) return true;
-        else return false;
+        return requestUrl.equals("temp");
     }
 
     @Override

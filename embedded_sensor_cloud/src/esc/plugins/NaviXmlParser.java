@@ -2,7 +2,6 @@ package esc.plugins;
 
 import org.xml.sax.*;
 import org.xml.sax.helpers.*;
-import sun.awt.image.ImageWatched;
 
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -59,7 +58,7 @@ public class NaviXmlParser extends DefaultHandler{
                 if(! tags.get(tmpStreet).contains(tmpCity)) tags.get(tmpStreet).add(tmpCity);
             }
             else{
-                LinkedList tmp = new LinkedList<String>();
+                LinkedList<String> tmp = new LinkedList<>();
                 tmp.add(tmpCity);
                 tags.put(tmpStreet, tmp);
             }
