@@ -10,3 +10,7 @@ h1, h2 {
 .list{
     text-align: center;
 }
+
+a:hover {
+    background: lightgrey;
+}

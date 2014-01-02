@@ -7,19 +7,19 @@ import java.net.Socket;
  * @author Alex
  */
 public class ConnectionHandler implements Runnable{
-    private Socket socket;
+    private Socket _socket;
     ConnectionHandler(Socket socket) {
-        this.socket = socket;
+        this._socket = socket;
     }
 
     public void run(){
-        System.out.println("Connected: " + socket.getRemoteSocketAddress().toString());
+        System.out.println("Connected: " + _socket.getRemoteSocketAddress().toString());
         processRequest();
     }
 
     private void processRequest() {
         String requestHeaderLine;
-        try(BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()))){
+        try(BufferedReader in = new BufferedReader(new InputStreamReader(_socket.getInputStream()))){
             //holt sich erste zeile
             requestHeaderLine = in.readLine();
             System.out.println(requestHeaderLine);
@@ -39,7 +39,7 @@ public class ConnectionHandler implements Runnable{
 
         } catch (IOException | NullPointerException e) {
                 e.printStackTrace();
-                new HttpResponse(socket, 500, "bla");
+                new HttpResponse(_socket, 500, "bla");
         }
     }
 
@@ -52,7 +52,8 @@ public class ConnectionHandler implements Runnable{
                     //hat 3 teile
                     if(splitHeadLine[2].startsWith("HTTP")) {
                         //ist HTTP request -> request in neuen HttpRequest kapseln
-                        return new HttpRequest(splitHeadLine, this.socket);
+                        HttpRequest request = new HttpRequest(splitHeadLine, this._socket);
+                        return request;
                     }
                 }
             }
@@ -61,7 +62,7 @@ public class ConnectionHandler implements Runnable{
         }
         catch (Exception e) {
             e.printStackTrace();
-            new HttpResponse(socket, 500,"bla");
+            new HttpResponse(_socket, 500,"bla");
             return null;
         }
     }

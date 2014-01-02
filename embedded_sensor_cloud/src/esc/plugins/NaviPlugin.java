@@ -11,6 +11,8 @@ import java.io.OutputStreamWriter;
 import java.net.Socket;
 import java.util.HashMap;
 import java.util.LinkedList;
+import java.util.Map;
+import java.util.Set;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.parsers.SAXParser;
 import javax.xml.parsers.SAXParserFactory;
@@ -21,13 +23,13 @@ import javax.xml.parsers.SAXParserFactory;
  */
 public class NaviPlugin implements IPlugin{
 
-    private final String NAVI_HEAD = "<!DOCTYPE html><html><head><title>Embedded Sensor Cloud</title><link rel=\"styl" +
-            "esheet\" type=\"text/css\" href=\"/static/style.css\"/></head><body><h1>Navi-Plugin</h1><div>";
-    private final String NAVI_REFRESH = "<div><form method=\"get\"><button type=\"submit\" name=\"refresh\" value=\"t" +
-             "rue\">Refresh</button></form></div>";
-    private final String NAVI_FORM = "<form name = \"navi\" method = \"get\">Enter streetname here: <input type=\"tex" +
-            "t\" name=\"street\"/> <input type=\"submit\" value=\"Submit\"/></form></div>";
-
+    private static final String NAVI_HEAD = "<!DOCTYPE html><html><head><title>Embedded Sensor Cloud</title><link rel" +
+            "=\"stylesheet\" type=\"text/css\" href=\"/static/style.css\"/></head><body><h1>Navi-Plugin</h1><div>";
+     private static final String NAVI_REFRESH = "<div><form method=\"get\"><button type=\"submit\" name=\"refresh\" v" +
+             "alue=\"true\">Refresh</button></form></div>";
+    private static final String NAVI_FORM = "<form name = \"navi\" method = \"get\" accept-charset=\"UTF-8\">Enter st" +
+            "reetname here: <input type=\"text\" name=\"street\"/> <input type=\"submit\" value=\"Submit\"/></form></" +
+            "div>";
     private HashMap<String, LinkedList<String>> naviEntires;
     private boolean formReady = false;
     private boolean isParsing = false;
@@ -83,7 +85,7 @@ public class NaviPlugin implements IPlugin{
     public void returnPluginPage(Socket socket) {
         String output = "";
         try(BufferedWriter out = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()))) {
-            output += "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nConnection: close \r\n\r\n";
+            output += "HTTP/1.1 200 OK\r\nContent-Type: text/html; charset=utf-8\r\nConnection: close \r\n\r\n";
             output += NAVI_HEAD;
             if(! this.isParsing) output += NAVI_REFRESH;
             if(this.formReady){
@@ -91,7 +93,7 @@ public class NaviPlugin implements IPlugin{
 
                 if(!streetName.equals("")){
                     if(naviEntires.containsKey(streetName)){
-                        output += "<ul>";
+                        output += "<ul id = \"cities\">";
                         for(String city : naviEntires.get(streetName)){
                             output += "<li>" + city + "</li>";
                         }

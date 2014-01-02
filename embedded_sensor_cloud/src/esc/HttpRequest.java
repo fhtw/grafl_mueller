@@ -1,6 +1,7 @@
 package esc;
 
 
+import java.io.*;
 import java.net.Socket;
 import java.util.HashMap;
 
@@ -13,7 +14,7 @@ public class HttpRequest {
     private UrlClass url;
     private String httpVersion;
     private Socket socket;
-    private HashMap<String, String> requestOptions;
+    private HashMap requestOptions;
 
     HttpRequest(String[] s, Socket socket) {
         //Request headline aufteilen und decodieren
@@ -21,7 +22,7 @@ public class HttpRequest {
         this.url = new UrlClass(s[1]);
         this.httpVersion = s[2];
         this.socket = socket;
-        this.requestOptions = new HashMap<>();
+        this.requestOptions = new HashMap<String, String>();
 		if(! url.parseUrl()){
             new HttpResponse(this.socket, 500, "");
         }

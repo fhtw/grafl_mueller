@@ -22,6 +22,6 @@ public class TemperaturePlugin implements IPlugin{
 
     @Override
     public void returnPluginPage(Socket socket) {
-        //To change body of implemented methods use File | Settings | File Templates.
+        //Hier zumindest die startpage, bzw man kanns auch bauen, so das immer die seite hier ausgebeben wird, siehe navi
     }
 }

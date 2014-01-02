@@ -57,7 +57,7 @@ public class UrlClassTest {
 
     @Test
     public void complexInvalidUrlPasses(){
-        UrlClass url = new UrlClass("/foo//foo.bar?=bla*&a=b&moo='?sds&qwwe&ai");
+        UrlClass url = new UrlClass("/foo//foo.bar?=bl%C3%9Fa*&a=b&moo='?sds&qwwe&ai");
         boolean ok = url.parseUrl();
         assertEquals(ok, true);
 
@@ -66,7 +66,7 @@ public class UrlClassTest {
         expectedFile.setName("foo");
         expectedFile.setExtension("bar");
         HashMap expectedMap = new HashMap<String, String>();
-        expectedMap.put("", "bla*");
+        expectedMap.put("", "blßa*");
         expectedMap.put("a", "b");
         expectedMap.put("moo", "'");
 
