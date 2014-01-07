@@ -3,6 +3,7 @@ package esc;
 import java.io.File;
 import java.io.IOException;
 import java.net.Socket;
+import java.sql.SQLException;
 import java.util.LinkedList;
 
 /**
@@ -38,7 +39,11 @@ public class PluginManager {
     public boolean findPlugin(Socket socket, UrlClass url){
         for(IPlugin iPlugin : this.pluginList){
             if(iPlugin.acceptRequest(url.getPluginPath())){
-                iPlugin.runPlugin(socket, url);
+                try {
+                    iPlugin.runPlugin(socket, url);
+                } catch (SQLException e) {
+                    e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+                }
                 return true;
             }
         }

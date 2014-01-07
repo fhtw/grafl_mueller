@@ -26,6 +26,9 @@ public class Server {
     public static void main(String[] args) {
 
         final int SERVER_PORT = 8080; // port
+        // Thread um kontinuierlich in die DB zu inserten
+        Thread insertThread = new Thread(new InsertRunnable());
+        //insertThread.start();
         // erstellt listener und lauscht
         try(ServerSocket listener = new ServerSocket(SERVER_PORT)){
             System.out.println("Waiting for connections...");

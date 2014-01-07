@@ -20,7 +20,7 @@ public class CustomPlugin implements IPlugin{
             "iv>";
     private static final String YOUTUBE_HEAD = "<iframe width=\"560\" height=\"315\" src=\"//www.youtube.com/embed/?l" +
             "istType=search&list=";
-    private static final String YOUTUBE_REST = "\" frameborder=\"0\" allowfullscreen autoplay=\"1\"></iframe>";
+    private static final String YOUTUBE_REST = "\" frameborder=\"0\" allowfullscreen></iframe>";
     private Boolean buttonPressed = false;
 
     @Override
@@ -42,7 +42,8 @@ public class CustomPlugin implements IPlugin{
             output += "HTTP/1.1 200 OK\r\nContent-Type: text/html; charset=utf-8\r\nConnection: close \r\n\r\n";
             output += HTML_HEAD;
             if(this.buttonPressed){
-                output += YOUTUBE_HEAD + getRandomSong() + YOUTUBE_REST;
+                String song = getRandomSong();
+                output += "<span>" + song + "</span><br/><br/>" + YOUTUBE_HEAD + song + "&amp;autoplay=1" + YOUTUBE_REST;
             }
             output += "</body></html>";
             out.write(output);
